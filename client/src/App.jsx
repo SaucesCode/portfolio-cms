@@ -1,22 +1,25 @@
 import { Routes, Route } from "react-router-dom";
 import Layout from "./components/layout/Layout";
+import Hero from "./components/sections/Hero";
+import Projects from "./components/sections/Projects";
+import CustomCursor from "./components/effects/CustomCursor";
 
 function App() {
   return (
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <Layout>
-            <div className="flex items-center justify-center min-h-[60vh]">
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-                Portfolio coming soon 🚀
-              </h1>
-            </div>
-          </Layout>
-        }
-      />
-    </Routes>
+    <>
+      <CustomCursor />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <Layout>
+              <Hero />
+              <Projects />
+            </Layout>
+          }
+        />
+      </Routes>
+    </>
   );
 }
 
