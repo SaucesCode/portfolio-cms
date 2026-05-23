@@ -6,6 +6,10 @@ import Projects from "./components/sections/Projects";
 import Skills from "./components/sections/Skills";
 import Experience from "./components/sections/Experience";
 import Certifications from "./components/sections/Certifications";
+import Testimonials from "./components/sections/Testimonials";
+import Blog from "./components/sections/Blog";
+import Contact from "./components/sections/Contact";
+import BlogPost from "./pages/BlogPost";
 import CustomCursor from "./components/effects/CustomCursor";
 
 function App() {
@@ -23,9 +27,13 @@ function App() {
               <Skills />
               <Experience />
               <Certifications />
+              <Testimonials />
+              <Blog />
+              <Contact />
             </Layout>
           }
         />
+        <Route path="/blog/:slug" element={<BlogPost />} />
       </Routes>
     </>
   );
