@@ -8,15 +8,13 @@ const GITHUB_HEADERS = {
 
 const GITHUB_USERNAME = process.env.GITHUB_USERNAME;
 
-
 // Fetches data for one specific repo by name
 // Example: fetchRepo('my-portfolio') hits:
 // GET https://api.github.com/repos/yourusername/my-portfolio
 async function fetchRepo(repoName) {
-  const response = await fetch(
-    `https://api.github.com/repos/${GITHUB_USERNAME}/${repoName}`,
-    { headers: GITHUB_HEADERS }
-  );
+  const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${repoName}`, {
+    headers: GITHUB_HEADERS,
+  });
 
   // If GitHub returns an error (repo not found, rate limited, etc.)
   if (!response.ok) {
@@ -60,8 +58,8 @@ async function fetchPinnedRepos() {
     }
   `;
 
-  const response = await fetch('https://api.github.com/graphql', {
-    method: 'POST',
+  const response = await fetch("https://api.github.com/graphql", {
+    method: "POST",
     headers: GITHUB_HEADERS,
     body: JSON.stringify({ query }),
   });

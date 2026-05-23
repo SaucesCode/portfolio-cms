@@ -26,6 +26,7 @@ const adminTestimonialsRoutes = require("./routes/admin/testimonials");
 const adminStatsRoutes = require("./routes/admin/stats");
 const adminBlogRoutes = require("./routes/admin/blog");
 const adminMessagesRoutes = require("./routes/admin/messages");
+const adminGithubRoutes = require("./routes/admin/github")
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -63,6 +64,7 @@ app.use("/api/admin/testimonials", adminTestimonialsRoutes);
 app.use("/api/admin/stats", adminStatsRoutes);
 app.use("/api/admin/blog", adminBlogRoutes);
 app.use("/api/admin/messages", adminMessagesRoutes);
+app.use("/api/admin/github", adminGithubRoutes);
 
 // --- Health check ---
 app.get("/", (req, res) => {
