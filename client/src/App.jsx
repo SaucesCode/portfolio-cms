@@ -15,7 +15,12 @@ import BlogPost from "./pages/BlogPost";
 import AdminLogin from "./pages/admin/Login";
 import Dashboard from "./pages/admin/Dashboard";
 import ManageSkills from "./pages/admin/ManageSkills";
+import ManageStats from "./pages/admin/ManageStats";
+import ManageExperience from "./pages/admin/ManageExperience";
+import ManageCertifications from "./pages/admin/ManageCertifications";
 import CustomCursor from "./components/effects/CustomCursor";
+import ManageHero from "./pages/admin/ManageHero";
+import ManageTestimonials from "./pages/admin/ManageTestimonials";
 
 function App() {
   return (
@@ -54,6 +59,10 @@ function App() {
                   <Route index element={<Dashboard />} />
                   <Route path="skills" element={<ManageSkills />} />
                   <Route path="stats" element={<ManageStats />} />
+                  <Route path="experience" element={<ManageExperience />} />
+                  <Route path="certifications" element={<ManageCertifications />} />
+                  <Route path="testimonials" element={<ManageTestimonials />} />
+                  <Route path="hero" element={<ManageHero />} />
                 </Routes>
               </AdminLayout>
             </PrivateRoute>
