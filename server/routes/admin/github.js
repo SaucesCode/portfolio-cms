@@ -103,4 +103,23 @@ router.get('/sync-status', async (req, res) => {
   }
 });
 
+
+router.get("/repo/:repoName", async (req, res) => {
+  try {
+    const { repoName } = req.params;
+    const githubData = await fetchRepo(repoName);
+
+    res.json({
+      title: repoName.replace(/-/g, " ").replace(/_/g, " "),
+      description: githubData.description,
+      language: githubData.language,
+      stars: githubData.stars,
+      forks: githubData.forks,
+      githubUrl: `https://github.com/${process.env.GITHUB_USERNAME}/${repoName}`,
+    });
+  } catch (error) {
+    res.status(404).json({ error: "Repo not found" });
+  }
+});
+
 module.exports = router;

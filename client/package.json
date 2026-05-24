@@ -23,6 +23,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "countup.js": "^2.10.0",
+    "easymde": "^2.21.0",
     "framer-motion": "^12.40.0",
     "highlight.js": "^11.11.1",
     "lucide-react": "^1.16.0",
