@@ -13,12 +13,9 @@ import Blog from "./components/sections/Blog";
 import Contact from "./components/sections/Contact";
 import BlogPost from "./pages/BlogPost";
 import AdminLogin from "./pages/admin/Login";
+import Dashboard from "./pages/admin/Dashboard";
+import ManageSkills from "./pages/admin/ManageSkills";
 import CustomCursor from "./components/effects/CustomCursor";
-
-// Placeholder — we'll replace with real pages in Step 4.2
-function AdminDashboard() {
-  return <h1 className="text-white text-2xl font-bold">Dashboard</h1>;
-}
 
 function App() {
   return (
@@ -44,17 +41,19 @@ function App() {
         />
         <Route path="/blog/:slug" element={<BlogPost />} />
 
-        {/* Admin — login is public */}
+        {/* Admin login — public */}
         <Route path="/admin/login" element={<AdminLogin />} />
 
-        {/* Admin — everything else is protected */}
+        {/* Admin — protected */}
         <Route
           path="/admin/*"
           element={
             <PrivateRoute>
               <AdminLayout>
                 <Routes>
-                  <Route index element={<AdminDashboard />} />
+                  <Route index element={<Dashboard />} />
+                  <Route path="skills" element={<ManageSkills />} />
+                  <Route path="stats" element={<ManageStats />} />
                 </Routes>
               </AdminLayout>
             </PrivateRoute>
