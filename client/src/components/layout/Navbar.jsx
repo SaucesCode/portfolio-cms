@@ -1,140 +1,323 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Moon, Sun, Menu, X } from "lucide-react";
+import {
+  Moon,
+  Sun,
+  Menu,
+  X,
+  User,
+  FolderKanban,
+  Brain,
+  Briefcase,
+  PenSquare,
+  Mail,
+} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useTheme } from "../../context/ThemeContext";
 import { useHero } from "../../hooks/useHero";
 
-// Nav links array — easy to add/remove links later
 const NAV_LINKS = [
-  { label: "About", href: "#hero" },
-  { label: "Projects", href: "#projects" },
-  { label: "Skills", href: "#skills" },
-  { label: "Experience", href: "#experience" },
-  { label: "Blog", href: "#blog" },
-  { label: "Contact", href: "#contact" },
+  { label: "About", href: "#hero", icon: User },
+  { label: "Projects", href: "#projects", icon: FolderKanban },
+  { label: "Skills", href: "#skills", icon: Brain },
+  { label: "Experience", href: "#experience", icon: Briefcase },
+  { label: "Blog", href: "#blog", icon: PenSquare },
+  { label: "Contact", href: "#contact", icon: Mail },
 ];
+
+const SECTION_IDS = ["hero", "projects", "skills", "experience", "blog", "contact"];
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
   const { data: hero } = useHero();
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
 
-  // Add a shadow to navbar when user scrolls down
+  const navRef = useRef(null);
+  const itemRefs = useRef([]);
+  const [underline, setUnderline] = useState({ left: 0, width: 0 });
+
+  // Scroll detection
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const fn = () => setScrolled(window.scrollY > 24);
+    window.addEventListener("scroll", fn, { passive: true });
+    return () => window.removeEventListener("scroll", fn);
   }, []);
 
+  // Scroll spy
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      entries =>
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            const i = SECTION_IDS.indexOf(e.target.id);
+            if (i !== -1) setActiveIdx(i);
+          }
+        }),
+      { rootMargin: "-40% 0px -55% 0px", threshold: 0 },
+    );
+    SECTION_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) obs.observe(el);
+    });
+    return () => obs.disconnect();
+  }, []);
+
+  // Slide underline to active item
+  useEffect(() => {
+    const el = itemRefs.current[activeIdx];
+    const nav = navRef.current;
+    if (!el || !nav) return;
+    const nR = nav.getBoundingClientRect();
+    const eR = el.getBoundingClientRect();
+    setUnderline({ left: eR.left - nR.left, width: eR.width });
+  }, [activeIdx]);
+
+  // Body scroll lock
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
+
+  const initials = hero?.name
+    ? hero.name
+        .split(" ")
+        .slice(0, 2)
+        .map(w => w[0])
+        .join("")
+    : "JP";
+
   return (
-    <header
-      className={`
-      fixed top-0 left-0 right-0 z-50 
-      transition-all duration-300
-      ${
-        scrolled
-          ? "bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm"
-          : "bg-transparent"
-      }
-    `}
-    >
-      <nav className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Logo / Name */}
-        <Link
-          to="/"
-          className="text-xl font-bold text-gray-900 dark:text-white hover:opacity-80 transition-opacity"
+    <>
+      {/* ── Floating Navbar ──────────────────────────────────────── */}
+      <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-max px-4">
+        <nav
+          className={`
+            relative flex items-center gap-0 rounded-2xl border px-1.5 py-1.5
+            transition-all duration-300
+            ${
+              scrolled
+                ? "bg-background/85 border-border/70 shadow-xl shadow-black/8 backdrop-blur-2xl"
+                : "bg-background/50 border-border/30 backdrop-blur-xl"
+            }
+          `}
         >
-          {hero?.name || "Portfolio"}
-        </Link>
+          {/* Blue left-edge accent on scroll */}
+          <motion.div
+            className="absolute left-0 top-2 bottom-2 w-[2.5px] rounded-full bg-blue-600"
+            animate={{ opacity: scrolled ? 1 : 0, scaleY: scrolled ? 1 : 0.4 }}
+            transition={{ duration: 0.25 }}
+          />
 
-        {/* Desktop Nav Links */}
-        <ul className="hidden md:flex items-center gap-8">
-          {NAV_LINKS.map(link => (
-            <li key={link.label}>
-              <a
-                href={link.href}
-                className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                {link.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-
-        {/* Right side — badge + theme toggle */}
-        <div className="hidden md:flex items-center gap-4">
-          {/* Available for work badge — only shows if true in DB */}
-          {hero?.availableForWork && (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800">
-              {/* Pulsing green dot */}
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-              </span>
-              <span className="text-xs text-green-700 dark:text-green-400 font-medium">
-                Available for work
-              </span>
-            </div>
-          )}
-
-          {/* Dark / Light toggle */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            aria-label="Toggle theme"
+          {/* Monogram — sharp rounded-square */}
+          <Link
+            to="/"
+            className="mr-2 ml-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-blue-600 text-[10px] font-black text-white tracking-wider hover:bg-blue-500 transition-colors"
           >
-            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-        </div>
+            {initials}
+          </Link>
 
-        {/* Mobile — hamburger button */}
-        <button
-          className="md:hidden p-2 text-gray-600 dark:text-gray-300"
-          onClick={() => setMenuOpen(prev => !prev)}
-          aria-label="Toggle menu"
-        >
-          {menuOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
-      </nav>
+          {/* Desktop nav */}
+          <div ref={navRef} className="relative hidden md:flex items-end gap-0">
+            {/* Sliding underline indicator */}
+            <motion.div
+              className="absolute bottom-0 h-[2px] rounded-full bg-blue-600"
+              animate={{ left: underline.left, width: underline.width }}
+              transition={{ type: "spring", stiffness: 420, damping: 36 }}
+            />
 
-      {/* Mobile menu — slides down when open */}
-      {menuOpen && (
-        <div className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-6 py-4 flex flex-col gap-4">
-          {NAV_LINKS.map(link => (
-            <a
-              key={link.label}
-              href={link.href}
-              onClick={() => setMenuOpen(false)}
-              className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+            {NAV_LINKS.map((link, i) => {
+              const Icon = link.icon;
+              const isActive = activeIdx === i;
+              return (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  ref={el => (itemRefs.current[i] = el)}
+                  onClick={() => setActiveIdx(i)}
+                  className={`
+                    relative flex items-center gap-1.5 px-3 pb-2 pt-2
+                    text-[11.5px] font-semibold uppercase tracking-[0.09em]
+                    transition-colors duration-150
+                    ${
+                      isActive
+                        ? "text-foreground"
+                        : "text-muted-foreground/70 hover:text-foreground"
+                    }
+                  `}
+                >
+                  <Icon size={13} strokeWidth={isActive ? 2.4 : 1.8} />
+                  {link.label}
+                </a>
+              );
+            })}
+          </div>
+
+          {/* Divider */}
+          <div className="hidden md:block h-4 w-px bg-border mx-2" />
+
+          {/* Right side */}
+          <div className="hidden md:flex items-center gap-1">
+            {/* Available badge */}
+            {hero?.availableForWork && (
+              <div className="flex items-center gap-1.5 rounded-lg border border-green-500/20 bg-green-500/8 px-2.5 py-1.5">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-green-600 dark:text-green-400">
+                  Available
+                </span>
+              </div>
+            )}
+
+            {/* Theme toggle */}
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              className="flex h-8 w-8 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
             >
-              {link.label}
-            </a>
-          ))}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={theme}
+                  initial={{ rotate: -30, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  exit={{ rotate: 30, opacity: 0 }}
+                  transition={{ duration: 0.16 }}
+                >
+                  {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+                </motion.div>
+              </AnimatePresence>
+            </button>
+          </div>
 
-          {/* Mobile theme toggle */}
+          {/* Mobile hamburger */}
           <button
-            onClick={toggleTheme}
-            className="flex items-center gap-2 text-gray-600 dark:text-gray-300"
+            onClick={() => setMenuOpen(p => !p)}
+            aria-label="Toggle menu"
+            className="flex md:hidden h-8 w-8 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200 ml-1"
           >
-            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-            <span className="text-sm">{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+            {menuOpen ? <X size={16} /> : <Menu size={16} />}
           </button>
+        </nav>
+      </header>
 
-          {/* Mobile available badge */}
-          {hero?.availableForWork && (
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-              </span>
-              <span className="text-xs text-green-700 dark:text-green-400 font-medium">
-                Available for work
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-    </header>
+      {/* ── Mobile drawer ────────────────────────────────────────── */}
+      <AnimatePresence>
+        {menuOpen && (
+          <>
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setMenuOpen(false)}
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
+            />
+
+            <motion.div
+              key="drawer"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 340, damping: 38 }}
+              className="fixed top-0 right-0 bottom-0 z-50 w-72 md:hidden flex flex-col bg-background border-l border-border"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-blue-600 text-[10px] font-black text-white tracking-wider">
+                    {initials}
+                  </div>
+                  <span className="text-[13px] font-bold uppercase tracking-[0.1em] text-foreground truncate max-w-[150px]">
+                    {hero?.name || "Portfolio"}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setMenuOpen(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Links */}
+              <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-0.5">
+                {NAV_LINKS.map((link, i) => {
+                  const Icon = link.icon;
+                  const isActive = activeIdx === i;
+                  return (
+                    <motion.a
+                      key={link.label}
+                      href={link.href}
+                      onClick={() => {
+                        setActiveIdx(i);
+                        setMenuOpen(false);
+                      }}
+                      initial={{ opacity: 0, x: 16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.04, duration: 0.2 }}
+                      className={`
+                        flex items-center gap-3 rounded-xl px-3 py-2.5
+                        text-[11.5px] font-bold uppercase tracking-[0.1em]
+                        transition-colors duration-150
+                        ${
+                          isActive
+                            ? "bg-blue-600/10 text-blue-600 dark:text-blue-400"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        }
+                      `}
+                    >
+                      {/* Active left bar */}
+                      <span
+                        className={`h-4 w-[2.5px] rounded-full transition-all ${
+                          isActive ? "bg-blue-600" : "bg-transparent"
+                        }`}
+                      />
+                      <Icon size={14} strokeWidth={isActive ? 2.4 : 1.8} />
+                      {link.label}
+                    </motion.a>
+                  );
+                })}
+              </nav>
+
+              {/* Footer */}
+              <div className="px-5 py-4 border-t border-border flex items-center justify-between">
+                {hero?.availableForWork && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-green-600 dark:text-green-400">
+                      Available
+                    </span>
+                  </div>
+                )}
+                <button
+                  onClick={toggleTheme}
+                  className="flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-1.5 text-[10.5px] font-bold uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-all"
+                >
+                  {theme === "dark" ? (
+                    <>
+                      <Sun size={12} /> Light
+                    </>
+                  ) : (
+                    <>
+                      <Moon size={12} /> Dark
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

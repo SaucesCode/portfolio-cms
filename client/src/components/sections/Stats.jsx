@@ -2,50 +2,60 @@ import { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CountUp } from "countup.js";
 import { useStats } from "../../hooks/useStats";
+import { Calendar, FolderKanban, Users, Award } from "lucide-react";
 
-// Individual stat card — handles its own CountUp instance
+const iconMap = {
+  Years: Calendar,
+  Projects: FolderKanban,
+  Clients: Users,
+  Delivered: Award,
+};
+
 function StatCard({ stat }) {
-  const countRef = useRef(null); // ref to the number element
+  const countRef = useRef(null);
   const [hasAnimated, setHasAnimated] = useState(false);
 
+  const Icon = iconMap[stat.label] || Calendar;
+
   useEffect(() => {
-    // Intersection Observer watches when this element enters the viewport
     const observer = new IntersectionObserver(
       entries => {
         if (entries[0].isIntersecting && !hasAnimated) {
-          // Start counting up when element is visible
           const countUp = new CountUp(countRef.current, stat.value, {
-            duration: 2.5,
+            duration: 2,
             useEasing: true,
           });
           countUp.start();
-          setHasAnimated(true); // only animate once
-          observer.disconnect(); // stop watching after first trigger
+          setHasAnimated(true);
+          observer.disconnect();
         }
       },
-      { threshold: 0.5 }, // trigger when 50% of element is visible
+      { threshold: 0.5 },
     );
 
     if (countRef.current) observer.observe(countRef.current);
-
     return () => observer.disconnect();
   }, [stat.value, hasAnimated]);
 
   return (
     <motion.div
-      className="flex flex-col items-center gap-2 p-8"
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5 }}
+      whileHover={{ y: -4 }}
+      className="group flex flex-col items-center p-8 bg-card/50 border border-border rounded-2xl hover:border-blue-500/30 transition-all duration-300"
     >
-      {/* The number CountUp animates */}
-      <span ref={countRef} className="text-4xl md:text-5xl font-bold text-white">
+      <div className="mb-5 p-3 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-500 group-hover:scale-110 transition-transform">
+        <Icon size={28} strokeWidth={1.9} />
+      </div>
+
+      <span
+        ref={countRef}
+        className="text-4xl md:text-5xl font-black tracking-[-0.04em] text-foreground tabular-nums"
+      >
         0
       </span>
 
-      {/* Label */}
-      <span className="text-sm text-gray-400 text-center">{stat.label}</span>
+      <span className="mt-2 text-sm font-medium uppercase tracking-[0.08em] text-muted-foreground text-center">
+        {stat.label}
+      </span>
     </motion.div>
   );
 }
@@ -56,11 +66,51 @@ export default function Stats() {
   if (isLoading || stats.length === 0) return null;
 
   return (
-    <section className="py-16 bg-[#0a0a0f] border-y border-white/5">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-white/5">
-          {stats.map(stat => (
-            <StatCard key={stat.id} stat={stat} />
+    <section className="relative py-20 bg-background border-y border-border overflow-hidden">
+      {/* Subtle background elements matching Hero */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-30"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")`,
+          backgroundSize: "256px",
+        }}
+      />
+
+      <div className="max-w-5xl mx-auto px-6 relative z-10">
+        {/* Header - matching Hero style */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-12"
+        >
+          <div className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-500 mb-3">
+            <div className="h-px w-6 bg-border" />
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              TRACK RECORD
+            </span>
+            <div className="h-px w-6 bg-border" />
+          </div>
+          <h2
+            className="font-black tracking-[-0.04em] text-foreground"
+            style={{ fontSize: "clamp(32px, 5vw, 48px)" }}
+          >
+            By the Numbers
+          </h2>
+        </motion.div>
+
+        {/* Stats Grid - Compact & Consistent */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={stat.id}
+              initial={{ opacity: 0, y: 25 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.08 }}
+            >
+              <StatCard stat={stat} />
+            </motion.div>
           ))}
         </div>
       </div>

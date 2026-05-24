@@ -24,6 +24,7 @@ import ManageProjects from "./pages/admin/ManageProjects";
 import ManageBlog from "./pages/admin/ManageBlog";
 import Inbox from "./pages/admin/Inbox";
 import ManageTestimonials from "./pages/admin/ManageTestimonials";
+import SEO from "./components/SEO";
 
 function App() {
   return (
@@ -35,6 +36,11 @@ function App() {
           path="/"
           element={
             <Layout>
+              <SEO
+                title="James Patrick I. De Mesa — Full-Stack Developer"
+                description="I build fast, beautiful web apps. Available for hire."
+                url="/"
+              />
               <Hero />
               <Stats />
               <Projects />
