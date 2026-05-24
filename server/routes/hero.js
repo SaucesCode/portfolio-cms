@@ -8,6 +8,7 @@ router.get("/", async (req, res) => {
     if (!hero) return res.status(404).json({ error: "Hero not found" });
     res.json(hero);
   } catch (error) {
+    console.error("Hero route error:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
