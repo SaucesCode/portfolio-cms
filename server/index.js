@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({ path: "./.env" });
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
@@ -26,7 +26,7 @@ const adminTestimonialsRoutes = require("./routes/admin/testimonials");
 const adminStatsRoutes = require("./routes/admin/stats");
 const adminBlogRoutes = require("./routes/admin/blog");
 const adminMessagesRoutes = require("./routes/admin/messages");
-const adminGithubRoutes = require("./routes/admin/github")
+const adminGithubRoutes = require("./routes/admin/github");
 
 const app = express();
 const PORT = process.env.PORT || 3001;

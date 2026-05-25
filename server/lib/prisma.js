@@ -1,12 +1,13 @@
-const { neon, neonConfig } = require("@neondatabase/serverless");
-const { PrismaNeon } = require("@prisma/adapter-neon");
 const { PrismaClient } = require("@prisma/client");
-const ws = require("ws");
+const { PrismaPg } = require("@prisma/adapter-pg");
+const { Pool } = require("pg");
 
-neonConfig.webSocketConstructor = ws;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 
-const sql = neon(process.env.DATABASE_URL);
-const adapter = new PrismaNeon(sql);
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 module.exports = prisma;

@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -19,7 +18,7 @@ model AdminUser {
 model Hero {
   id               Int      @id @default(autoincrement())
   name             String
-  tagline          String[] // array of strings for typewriter rotation
+  tagline          String[]
   bio              String
   profileImageUrl  String?
   resumeUrl        String?
@@ -50,12 +49,12 @@ model Project {
 }
 
 model Skill {
-  id               Int    @id @default(autoincrement())
+  id               Int     @id @default(autoincrement())
   name             String
-  category         String // "Frontend" | "Backend" | "Tools" | "Other"
-  proficiencyLevel Int    @default(3) // 1–5
+  category         String
+  proficiencyLevel Int     @default(3)
   iconName         String?
-  orderIndex       Int    @default(0)
+  orderIndex       Int     @default(0)
 
   @@map("skills")
 }
@@ -102,7 +101,7 @@ model BlogPost {
   id            Int       @id @default(autoincrement())
   title         String
   slug          String    @unique
-  content       String    // markdown
+  content       String
   excerpt       String?
   coverImageUrl String?
   tags          String[]
@@ -114,8 +113,8 @@ model BlogPost {
 }
 
 model Stat {
-  id       Int    @id @default(autoincrement())
-  label    String // e.g. "Projects Built"
+  id       Int     @id @default(autoincrement())
+  label    String
   value    Int
   iconName String?
 
