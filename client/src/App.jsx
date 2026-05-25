@@ -25,6 +25,7 @@ import ManageBlog from "./pages/admin/ManageBlog";
 import Inbox from "./pages/admin/Inbox";
 import ManageTestimonials from "./pages/admin/ManageTestimonials";
 import SEO from "./components/SEO";
+import SkillsAndCerts from "./components/sections/SkillsAndCerts";
 
 function App() {
   return (
@@ -44,9 +45,8 @@ function App() {
               <Hero />
               <Stats />
               <Projects />
-              <Skills />
+              <SkillsAndCerts />
               <Experience />
-              <Certifications />
               <Testimonials />
               <Blog />
               <Contact />

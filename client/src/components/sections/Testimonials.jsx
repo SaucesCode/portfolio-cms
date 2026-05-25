@@ -3,124 +3,179 @@ import { motion } from "framer-motion";
 import { Quote } from "lucide-react";
 import { useTestimonials } from "../../hooks/useTestimonials";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-};
-
 export default function Testimonials() {
   const { data: testimonials = [], isLoading } = useTestimonials();
   const [isPaused, setIsPaused] = useState(false);
   const scrollRef = useRef(null);
-  const animationRef = useRef(null);
-  const positionRef = useRef(0);
+  const animRef = useRef(null);
+  const posRef = useRef(0);
 
-  // Auto-scroll logic using requestAnimationFrame
-  // This is smoother than CSS animation for pauseable carousels
   useEffect(() => {
     if (testimonials.length === 0) return;
-
-    const scroll = () => {
+    const tick = () => {
       if (!isPaused && scrollRef.current) {
-        positionRef.current += 0.5; // scroll speed — increase for faster
-
-        const { scrollWidth, clientWidth } = scrollRef.current;
-        const maxScroll = scrollWidth / 2; // we duplicate cards so reset at halfway
-
-        // When we've scrolled halfway, reset to start — creates infinite loop
-        if (positionRef.current >= maxScroll) {
-          positionRef.current = 0;
-        }
-
-        scrollRef.current.scrollLeft = positionRef.current;
+        posRef.current += 0.5;
+        const half = scrollRef.current.scrollWidth / 2;
+        if (posRef.current >= half) posRef.current = 0;
+        scrollRef.current.scrollLeft = posRef.current;
       }
-
-      animationRef.current = requestAnimationFrame(scroll);
+      animRef.current = requestAnimationFrame(tick);
     };
-
-    animationRef.current = requestAnimationFrame(scroll);
-
-    // Cleanup on unmount
-    return () => cancelAnimationFrame(animationRef.current);
+    animRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animRef.current);
   }, [isPaused, testimonials]);
 
   if (isLoading || testimonials.length === 0) return null;
 
-  // Duplicate cards to create seamless infinite scroll effect
-  // When the first set ends, the duplicate set is already there
   const doubled = [...testimonials, ...testimonials];
 
   return (
-    <section id="testimonials" className="py-24 bg-[#0a0a0f] overflow-hidden">
-      <div className="max-w-6xl mx-auto px-6 mb-12">
-        {/* Section heading */}
-        <motion.div
-          className="text-center"
-          variants={fadeUp}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-        >
-          <p className="text-blue-400 text-sm font-mono tracking-widest uppercase mb-3">
-            Kind Words
-          </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Testimonials</h2>
-          <p className="text-gray-400 max-w-md mx-auto text-sm leading-relaxed">
-            What people I've worked with have to say.
-          </p>
-        </motion.div>
-      </div>
-
-      {/* Scrolling carousel — full width, no max-width constraint */}
+    <section
+      id="testimonials"
+      className="relative overflow-hidden bg-background border-y border-border"
+    >
+      {/* Grain */}
       <div
-        ref={scrollRef}
-        className="flex gap-4 overflow-x-hidden cursor-grab select-none px-6"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-      >
-        {doubled.map((testimonial, index) => (
-          <TestimonialCard key={`${testimonial.id}-${index}`} testimonial={testimonial} />
-        ))}
+        className="pointer-events-none absolute inset-0 opacity-25"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")`,
+          backgroundSize: "256px",
+        }}
+      />
+      {/* Grid dark */}
+      <div
+        className="pointer-events-none absolute inset-0 hidden dark:block"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right,rgba(255,255,255,0.03) 1px,transparent 1px)," +
+            "linear-gradient(to bottom,rgba(255,255,255,0.03) 1px,transparent 1px)",
+          backgroundSize: "48px 48px",
+          maskImage: "radial-gradient(ellipse 80% 80% at 50% 50%,#000 40%,transparent 100%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 80% 80% at 50% 50%,#000 40%,transparent 100%)",
+        }}
+      />
+      {/* Blue glow */}
+      <div className="pointer-events-none absolute bottom-0 left-0 z-0 h-[300px] w-[300px] rounded-full bg-blue-600/6 dark:bg-blue-500/8 blur-[80px]" />
+
+      <div className="relative z-10 py-20">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          className="mx-auto max-w-[1280px] px-6 md:px-14 mb-12"
+        >
+          <div className="mb-4 flex items-center gap-3">
+            <span className="h-px w-6 bg-border inline-block" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50">
+              Kind Words
+            </span>
+          </div>
+
+          <div
+            className="flex flex-wrap items-end gap-x-4 leading-[0.9] tracking-[-0.04em] font-black"
+            style={{ fontSize: "clamp(40px, 7vw, 80px)" }}
+          >
+            <span
+              className="text-transparent select-none"
+              style={{
+                WebkitTextStroke:
+                  "1.5px color-mix(in srgb, var(--foreground) 22%, transparent)",
+              }}
+            >
+              WHAT THEY
+            </span>
+            <span className="text-foreground">SAY</span>
+            <span className="text-blue-600 dark:text-blue-500">.</span>
+          </div>
+        </motion.div>
+
+        {/* Edge fade masks */}
+        <div className="relative">
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-24 z-10 bg-gradient-to-r from-background to-transparent" />
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-24 z-10 bg-gradient-to-l from-background to-transparent" />
+
+          {/* Carousel */}
+          <div
+            ref={scrollRef}
+            className="flex gap-4 overflow-x-hidden select-none px-6 cursor-default"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+          >
+            {doubled.map((t, i) => (
+              <TestimonialCard key={`${t.id}-${i}`} testimonial={t} />
+            ))}
+          </div>
+        </div>
+
+        {/* Pause hint */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="mt-8 text-center text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground/25"
+        >
+          Hover to pause
+        </motion.p>
       </div>
     </section>
   );
 }
 
 function TestimonialCard({ testimonial }) {
+  const initials = testimonial.name
+    .split(" ")
+    .map(n => n[0])
+    .join("")
+    .slice(0, 2);
+
   return (
-    <div className="flex-shrink-0 w-80 p-6 rounded-2xl bg-gray-900 border border-white/5 hover:border-blue-500/20 transition-colors duration-300">
+    <div className="group relative flex-shrink-0 w-[320px] flex flex-col gap-5 rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-blue-500/25 hover:shadow-lg hover:shadow-blue-600/5 hover:-translate-y-0.5">
+      {/* Top accent line */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl overflow-hidden">
+        <div className="h-full w-full bg-gradient-to-r from-blue-600 to-violet-600 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300" />
+      </div>
+
       {/* Quote icon */}
-      <Quote size={20} className="text-blue-500/40 mb-4" />
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-blue-500/15 bg-blue-500/8">
+        <Quote size={14} className="text-blue-500 dark:text-blue-400" strokeWidth={2} />
+      </div>
 
       {/* Quote text */}
-      <p className="text-gray-300 text-sm leading-relaxed mb-6 italic">
+      <p className="flex-1 text-[13px] leading-[1.75] text-muted-foreground italic">
         "{testimonial.quote}"
       </p>
 
+      {/* Divider */}
+      <div className="h-px bg-border" />
+
       {/* Author */}
       <div className="flex items-center gap-3">
-        {/* Avatar — initials fallback if no image */}
         {testimonial.avatarUrl ? (
           <img
             src={testimonial.avatarUrl}
             alt={testimonial.name}
-            className="w-9 h-9 rounded-full object-cover border border-white/10"
+            className="h-9 w-9 rounded-full object-cover border border-border"
           />
         ) : (
-          <div className="w-9 h-9 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xs font-semibold">
-            {/* First letter of first and last name */}
-            {testimonial.name
-              .split(" ")
-              .map(n => n[0])
-              .join("")
-              .slice(0, 2)}
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-500/20 bg-blue-500/8 text-[11px] font-black text-blue-600 dark:text-blue-400">
+            {initials}
           </div>
         )}
-
         <div>
-          <p className="text-sm font-medium text-white">{testimonial.name}</p>
-          <p className="text-xs text-gray-500">
-            {testimonial.role} · {testimonial.company}
+          <p className="text-[13px] font-bold text-foreground leading-none mb-1">
+            {testimonial.name}
+          </p>
+          <p className="text-[11px] font-medium text-muted-foreground/50">
+            {testimonial.role}
+            {testimonial.company && (
+              <>
+                {" "}
+                · <span className="text-muted-foreground/40">{testimonial.company}</span>
+              </>
+            )}
           </p>
         </div>
       </div>
