@@ -66,38 +66,49 @@ export default function Experience() {
       />
 
       <div className="relative z-10">
-        {/* Header + nav buttons */}
-        <div className="mx-auto mb-12 flex max-w-6xl items-end justify-between px-6">
+        {/* Header + nav buttons — aligned to global max-width */}
+        <div className="mx-auto mb-12 flex max-w-[1280px] items-end justify-between px-6 md:px-14">
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="mb-2 flex items-center gap-3">
-              <div className="h-px w-6 bg-border" />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/50">
+            {/* Eyebrow */}
+            <div className="mb-4 flex items-center gap-3">
+              <span className="h-px w-6 bg-border inline-block" />
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50">
                 Where I've Been
               </span>
             </div>
-            <h2
-              className="font-black tracking-[-0.04em]"
-              style={{ fontSize: "clamp(28px, 4vw, 42px)" }}
+
+            {/* Split headline — matches global pattern */}
+            <div
+              className="flex flex-wrap items-end gap-x-4 leading-[0.9] tracking-[-0.04em] font-black"
+              style={{ fontSize: "clamp(40px, 7vw, 80px)" }}
             >
               <span
-                className="text-transparent"
+                className="text-transparent select-none"
                 style={{
                   WebkitTextStroke:
                     "1.5px color-mix(in srgb, var(--foreground) 22%, transparent)",
                 }}
               >
-                WORK{" "}
+                WORK
               </span>
               <span className="text-foreground">EXPERIENCE</span>
-            </h2>
+              <span className="text-blue-600 dark:text-blue-500">.</span>
+            </div>
           </motion.div>
 
-          {/* Scroll buttons */}
-          <div className="flex items-center gap-2">
+          {/* Scroll nav buttons */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="flex shrink-0 items-center gap-2 pb-2"
+          >
             <button
               onClick={() => scroll(-1)}
               className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-all hover:border-blue-500/30 hover:text-foreground"
@@ -110,18 +121,20 @@ export default function Experience() {
             >
               <ArrowRight size={15} />
             </button>
-          </div>
+          </motion.div>
         </div>
 
         {/* Horizontal scroll track */}
         <div
           ref={scrollRef}
-          className="flex gap-4 overflow-x-auto scroll-smooth px-6 pb-4 md:px-[max(24px,calc((100vw-1152px)/2))]"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          className="flex gap-4 overflow-x-auto scroll-smooth pb-4"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            paddingLeft: "max(24px, calc((100vw - 1280px) / 2 + 56px))",
+            paddingRight: "max(24px, calc((100vw - 1280px) / 2 + 56px))",
+          }}
         >
-          {/* Timeline connector line */}
-          <div className="pointer-events-none absolute top-[calc(50%+60px)] left-0 right-0 h-px bg-border opacity-40" />
-
           {experiences.map((exp, i) => (
             <motion.div
               key={exp.id}
@@ -131,6 +144,11 @@ export default function Experience() {
               transition={{ delay: i * 0.08 }}
               className="group relative flex w-[340px] shrink-0 flex-col rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-blue-500/25 hover:bg-blue-600/[0.02]"
             >
+              {/* Top accent line on hover */}
+              <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl overflow-hidden">
+                <div className="h-full w-full bg-gradient-to-r from-blue-600 to-violet-600 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300" />
+              </div>
+
               {/* Index number */}
               <span
                 className="mb-4 block font-black tracking-[-0.04em] text-transparent select-none"
@@ -184,9 +202,6 @@ export default function Experience() {
               <p className="flex-1 text-[13px] leading-relaxed text-muted-foreground line-clamp-4">
                 {exp.description}
               </p>
-
-              {/* Bottom blue accent on hover */}
-              <div className="absolute bottom-0 left-6 right-6 h-[2px] rounded-full bg-blue-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             </motion.div>
           ))}
         </div>
@@ -194,6 +209,17 @@ export default function Experience() {
         {/* Fade edges */}
         <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-background to-transparent z-20" />
         <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-background to-transparent z-20" />
+
+        {/* Count */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4 }}
+          className="mx-auto mt-5 max-w-[1280px] px-6 md:px-14 text-right text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground/25"
+        >
+          {experiences.length} position{experiences.length !== 1 ? "s" : ""}
+        </motion.p>
       </div>
     </section>
   );

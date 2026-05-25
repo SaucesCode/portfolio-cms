@@ -85,10 +85,10 @@ export default function Testimonials() {
                   "1.5px color-mix(in srgb, var(--foreground) 22%, transparent)",
               }}
             >
-              WHAT THEY
+              WHAT
             </span>
-            <span className="text-foreground">SAY</span>
-            <span className="text-blue-600 dark:text-blue-500">.</span>
+            <span className="text-foreground">THEY</span>
+            <span className="text-blue-600 dark:text-blue-500">SAY</span>
           </div>
         </motion.div>
 

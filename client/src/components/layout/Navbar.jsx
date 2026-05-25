@@ -35,10 +35,6 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
 
-  const navRef = useRef(null);
-  const itemRefs = useRef([]);
-  const [underline, setUnderline] = useState({ left: 0, width: 0 });
-
   // Scroll detection
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 24);
@@ -65,16 +61,6 @@ export default function Navbar() {
     return () => obs.disconnect();
   }, []);
 
-  // Slide underline to active item
-  useEffect(() => {
-    const el = itemRefs.current[activeIdx];
-    const nav = navRef.current;
-    if (!el || !nav) return;
-    const nR = nav.getBoundingClientRect();
-    const eR = el.getBoundingClientRect();
-    setUnderline({ left: eR.left - nR.left, width: eR.width });
-  }, [activeIdx]);
-
   // Body scroll lock
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
@@ -83,13 +69,7 @@ export default function Navbar() {
     };
   }, [menuOpen]);
 
-  const initials = hero?.name
-    ? hero.name
-        .split(" ")
-        .slice(0, 2)
-        .map(w => w[0])
-        .join("")
-    : "JP";
+  const firstName = hero?.name ? hero.name.trim().split(" ")[0] : "James";
 
   return (
     <>
@@ -113,23 +93,16 @@ export default function Navbar() {
             transition={{ duration: 0.25 }}
           />
 
-          {/* Monogram — sharp rounded-square */}
+          {/* First name badge */}
           <Link
             to="/"
-            className="mr-2 ml-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-blue-600 text-[10px] font-black text-white tracking-wider hover:bg-blue-500 transition-colors"
+            className="mr-2 ml-1.5 flex h-7 shrink-0 items-center justify-center rounded-[7px] bg-blue-600 px-2.5 text-[10px] font-black text-white tracking-wider hover:bg-blue-500 transition-colors whitespace-nowrap"
           >
-            {initials}
+            {firstName}
           </Link>
 
           {/* Desktop nav */}
-          <div ref={navRef} className="relative hidden md:flex items-end gap-0">
-            {/* Sliding underline indicator */}
-            <motion.div
-              className="absolute bottom-0 h-[2px] rounded-full bg-blue-600"
-              animate={{ left: underline.left, width: underline.width }}
-              transition={{ type: "spring", stiffness: 420, damping: 36 }}
-            />
-
+          <div className="relative hidden md:flex items-center gap-0">
             {NAV_LINKS.map((link, i) => {
               const Icon = link.icon;
               const isActive = activeIdx === i;
@@ -137,20 +110,37 @@ export default function Navbar() {
                 <a
                   key={link.label}
                   href={link.href}
-                  ref={el => (itemRefs.current[i] = el)}
                   onClick={() => setActiveIdx(i)}
                   className={`
-                    relative flex items-center gap-1.5 px-3 pb-2 pt-2
+                    relative flex items-center gap-1.5 px-3 py-2
                     text-[11.5px] font-semibold uppercase tracking-[0.09em]
-                    transition-colors duration-150
+                    transition-all duration-200
                     ${
                       isActive
-                        ? "text-foreground"
+                        ? "text-blue-500 dark:text-blue-400"
                         : "text-muted-foreground/70 hover:text-foreground"
                     }
                   `}
+                  style={
+                    isActive
+                      ? {
+                          textShadow:
+                            "0 0 12px rgb(59 130 246 / 0.7), 0 0 24px rgb(59 130 246 / 0.35)",
+                        }
+                      : undefined
+                  }
                 >
-                  <Icon size={13} strokeWidth={isActive ? 2.4 : 1.8} />
+                  <Icon
+                    size={13}
+                    strokeWidth={isActive ? 2.4 : 1.8}
+                    style={
+                      isActive
+                        ? {
+                            filter: "drop-shadow(0 0 4px rgb(59 130 246 / 0.8))",
+                          }
+                        : undefined
+                    }
+                  />
                   {link.label}
                 </a>
               );
@@ -231,8 +221,8 @@ export default function Navbar() {
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-blue-600 text-[10px] font-black text-white tracking-wider">
-                    {initials}
+                  <div className="flex h-7 shrink-0 items-center justify-center rounded-[7px] bg-blue-600 px-2.5 text-[10px] font-black text-white tracking-wider">
+                    {firstName}
                   </div>
                   <span className="text-[13px] font-bold uppercase tracking-[0.1em] text-foreground truncate max-w-[150px]">
                     {hero?.name || "Portfolio"}
@@ -265,21 +255,38 @@ export default function Navbar() {
                       className={`
                         flex items-center gap-3 rounded-xl px-3 py-2.5
                         text-[11.5px] font-bold uppercase tracking-[0.1em]
-                        transition-colors duration-150
+                        transition-all duration-150
                         ${
                           isActive
-                            ? "bg-blue-600/10 text-blue-600 dark:text-blue-400"
+                            ? "bg-blue-600/10 text-blue-500 dark:text-blue-400"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted"
                         }
                       `}
+                      style={
+                        isActive
+                          ? {
+                              textShadow: "0 0 10px rgb(59 130 246 / 0.5)",
+                            }
+                          : undefined
+                      }
                     >
                       {/* Active left bar */}
                       <span
                         className={`h-4 w-[2.5px] rounded-full transition-all ${
-                          isActive ? "bg-blue-600" : "bg-transparent"
+                          isActive ? "bg-blue-500" : "bg-transparent"
                         }`}
                       />
-                      <Icon size={14} strokeWidth={isActive ? 2.4 : 1.8} />
+                      <Icon
+                        size={14}
+                        strokeWidth={isActive ? 2.4 : 1.8}
+                        style={
+                          isActive
+                            ? {
+                                filter: "drop-shadow(0 0 3px rgb(59 130 246 / 0.7))",
+                              }
+                            : undefined
+                        }
+                      />
                       {link.label}
                     </motion.a>
                   );

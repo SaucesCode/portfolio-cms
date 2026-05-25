@@ -1,63 +1,122 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function CustomCursor() {
-  const dotRef = useRef(null);
-  const ringRef = useRef(null);
+  const cursorRef = useRef(null);
+  const trailRef = useRef(null);
+  const posRef = useRef({ x: -100, y: -100 });
+  const trailPos = useRef({ x: -100, y: -100 });
+  const rafRef = useRef(null);
+  const [clicked, setClicked] = useState(false);
+  const [hovering, setHovering] = useState(false);
 
   useEffect(() => {
-    const dot = dotRef.current;
-    const ring = ringRef.current;
+    const cursor = cursorRef.current;
+    const trail = trailRef.current;
 
-    // Track mouse position and move both elements
-    const handleMouseMove = e => {
-      const { clientX: x, clientY: y } = e;
+    // Smooth trail via lerp in rAF loop
+    const lerp = (a, b, t) => a + (b - a) * t;
 
-      // Dot follows cursor exactly
-      dot.style.transform = `translate(${x}px, ${y}px)`;
+    const loop = () => {
+      trailPos.current.x = lerp(trailPos.current.x, posRef.current.x, 0.1);
+      trailPos.current.y = lerp(trailPos.current.y, posRef.current.y, 0.1);
 
-      // Ring follows with a slight delay using CSS transition
-      ring.style.transform = `translate(${x}px, ${y}px)`;
+      cursor.style.transform = `translate(${posRef.current.x}px, ${posRef.current.y}px)`;
+      trail.style.transform = `translate(${trailPos.current.x}px, ${trailPos.current.y}px)`;
+
+      rafRef.current = requestAnimationFrame(loop);
+    };
+    rafRef.current = requestAnimationFrame(loop);
+
+    const onMove = e => {
+      posRef.current = { x: e.clientX, y: e.clientY };
     };
 
-    // Scale up ring when hovering over clickable elements
-    const handleMouseOver = e => {
-      if (e.target.matches('a, button, [role="button"]')) {
-        ring.style.scale = "2";
-        ring.style.opacity = "0.5";
+    const onOver = e => {
+      if (e.target.closest('a, button, [role="button"], input, textarea, select, label')) {
+        setHovering(true);
       }
     };
 
-    const handleMouseOut = () => {
-      ring.style.scale = "1";
-      ring.style.opacity = "1";
+    const onOut = e => {
+      if (e.target.closest('a, button, [role="button"], input, textarea, select, label')) {
+        setHovering(false);
+      }
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseover", handleMouseOver);
-    window.addEventListener("mouseout", handleMouseOut);
+    const onDown = () => setClicked(true);
+    const onUp = () => setClicked(false);
 
-    // Cleanup — remove listeners when component unmounts
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseover", onOver);
+    window.addEventListener("mouseout", onOut);
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("mouseup", onUp);
+
+    // Hide default cursor globally
+    document.documentElement.style.cursor = "none";
+
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseover", handleMouseOver);
-      window.removeEventListener("mouseout", handleMouseOut);
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseover", onOver);
+      window.removeEventListener("mouseout", onOut);
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("mouseup", onUp);
+      document.documentElement.style.cursor = "";
     };
   }, []);
 
   return (
     <>
-      {/* Small glowing dot */}
+      {/* ── Main cursor dot ─────────────────────────────────── */}
       <div
-        ref={dotRef}
-        className="fixed top-0 left-0 w-2 h-2 rounded-full bg-blue-500 pointer-events-none z-[9999] -translate-x-1/2 -translate-y-1/2"
-        style={{ boxShadow: "0 0 6px 2px rgba(59,130,246,0.6)" }}
-      />
-      {/* Larger trailing ring */}
+        ref={cursorRef}
+        className="pointer-events-none fixed top-0 left-0 z-[9999] -translate-x-1/2 -translate-y-1/2"
+        style={{ willChange: "transform" }}
+      >
+        {/* Outer ring — expands on hover */}
+        <span
+          className="absolute rounded-full border border-blue-500/60 transition-all duration-200"
+          style={{
+            inset: hovering ? "-14px" : "-8px",
+            opacity: hovering ? 0.6 : 0,
+          }}
+        />
+
+        {/* Core dot — morphs on hover/click */}
+        <span
+          className="block rounded-full bg-blue-500 transition-all duration-150"
+          style={{
+            width: clicked ? 6 : hovering ? 10 : 8,
+            height: clicked ? 6 : hovering ? 10 : 8,
+            opacity: 1,
+            transform: `translate(-50%, -50%) scale(${clicked ? 0.7 : 1})`,
+            boxShadow: hovering
+              ? "0 0 12px 4px rgba(59,130,246,0.45)"
+              : "0 0 6px 2px rgba(59,130,246,0.35)",
+          }}
+        />
+      </div>
+
+      {/* ── Trailing blob ───────────────────────────────────── */}
       <div
-        ref={ringRef}
-        className="fixed top-0 left-0 w-8 h-8 rounded-full border-2 border-blue-400 pointer-events-none z-[9999] -translate-x-1/2 -translate-y-1/2"
-        style={{ transition: "transform 0.12s ease-out, scale 0.2s ease, opacity 0.2s ease" }}
-      />
+        ref={trailRef}
+        className="pointer-events-none fixed top-0 left-0 z-[9998] -translate-x-1/2 -translate-y-1/2"
+        style={{ willChange: "transform" }}
+      >
+        <span
+          className="block rounded-full transition-all duration-200"
+          style={{
+            width: hovering ? 44 : 28,
+            height: hovering ? 44 : 28,
+            transform: `translate(-50%, -50%)`,
+            background: hovering
+              ? "radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%)"
+              : "radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)",
+            border: `1px solid rgba(59,130,246,${hovering ? 0.25 : 0.15})`,
+          }}
+        />
+      </div>
     </>
   );
 }
