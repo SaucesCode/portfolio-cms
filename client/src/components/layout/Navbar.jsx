@@ -43,22 +43,28 @@ export default function Navbar() {
   }, []);
 
   // Scroll spy
+  // Scroll spy
   useEffect(() => {
-    const obs = new IntersectionObserver(
-      entries =>
-        entries.forEach(e => {
-          if (e.isIntersecting) {
-            const i = SECTION_IDS.indexOf(e.target.id);
-            if (i !== -1) setActiveIdx(i);
-          }
-        }),
-      { rootMargin: "-40% 0px -55% 0px", threshold: 0 },
-    );
-    SECTION_IDS.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) obs.observe(el);
-    });
-    return () => obs.disconnect();
+    const handleScroll = () => {
+      const scrollPos = window.scrollY + 200;
+
+      for (let i = SECTION_IDS.length - 1; i >= 0; i--) {
+        const section = document.getElementById(SECTION_IDS[i]);
+
+        if (section && scrollPos >= section.offsetTop) {
+          setActiveIdx(i);
+          break;
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    handleScroll();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   // Body scroll lock
