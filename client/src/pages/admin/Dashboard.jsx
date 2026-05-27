@@ -20,42 +20,75 @@ import { toast } from "react-toastify";
 import api from "../../services/api";
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 25 } },
 };
 
 const containerVariants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.08 } },
+  show: { transition: { staggerChildren: 0.04 } },
 };
 
-// Quick nav links to every management panel
 const QUICK_LINKS = [
-  { label: "Hero", href: "/admin/hero", icon: User, desc: "Edit bio, photo, taglines" },
   {
-    label: "Projects",
+    label: "Hero Section",
+    href: "/admin/hero",
+    icon: User,
+    desc: "Bio, profile assets, structural taglines",
+  },
+  {
+    label: "Projects Ecosystem",
     href: "/admin/projects",
     icon: FolderOpen,
-    desc: "Manage your projects",
+    desc: "Production architecture case-studies",
   },
-  { label: "Skills", href: "/admin/skills", icon: Wrench, desc: "Add or edit skills" },
-  { label: "Experience", href: "/admin/experience", icon: Briefcase, desc: "Work history" },
-  { label: "Certifications", href: "/admin/certifications", icon: Award, desc: "Credentials" },
   {
-    label: "Testimonials",
+    label: "Core Capabilities",
+    href: "/admin/skills",
+    icon: Wrench,
+    desc: "Stack proficiencies, toolchains, ecosystems",
+  },
+  {
+    label: "Career Timeline",
+    href: "/admin/experience",
+    icon: Briefcase,
+    desc: "Professional background, history logs",
+  },
+  {
+    label: "Certifications",
+    href: "/admin/certifications",
+    icon: Award,
+    desc: "Verified credentials and cloud badges",
+  },
+  {
+    label: "Endorsements",
     href: "/admin/testimonials",
     icon: MessageSquare,
-    desc: "Manage quotes",
+    desc: "Client quotes and verified references",
   },
-  { label: "Stats", href: "/admin/stats", icon: BarChart2, desc: "Edit stat numbers" },
-  { label: "Blog", href: "/admin/blog", icon: FileText, desc: "Write and publish posts" },
-  { label: "Inbox", href: "/admin/inbox", icon: Inbox, desc: "View messages" },
+  {
+    label: "Performance Metrics",
+    href: "/admin/stats",
+    icon: BarChart2,
+    desc: "Quantifiable numbers and impact analytics",
+  },
+  {
+    label: "Technical Blog",
+    href: "/admin/blog",
+    icon: FileText,
+    desc: "Publish markdown posts and tech drafts",
+  },
+  {
+    label: "Communications",
+    href: "/admin/inbox",
+    icon: Inbox,
+    desc: "Lead capture pipeline and inbox streams",
+  },
 ];
 
 export default function Dashboard() {
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Fetch summary counts for stat cards
   const { data: projects = [] } = useQuery({
     queryKey: ["admin-projects"],
     queryFn: () => api.get("/admin/projects").then(res => res.data),
@@ -71,13 +104,11 @@ export default function Dashboard() {
     queryFn: () => api.get("/admin/blog").then(res => res.data),
   });
 
-  // Fetch last sync status
   const { data: syncStatus, refetch: refetchSyncStatus } = useQuery({
     queryKey: ["sync-status"],
     queryFn: () => api.get("/admin/github/sync-status").then(res => res.data),
   });
 
-  // Derived counts
   const unreadCount = messages.filter(m => !m.isRead).length;
   const publishedCount = blogPosts.filter(p => p.published).length;
   const draftCount = blogPosts.filter(p => !p.published).length;
@@ -92,75 +123,71 @@ export default function Dashboard() {
       ).length;
 
       if (synced > 0) {
-        toast.success(`Synced ${synced} repo${synced > 1 ? "s" : ""} successfully`);
+        toast.success(`Synchronized ${synced} workspace components`);
       } else if (skipped > 0) {
-        toast.info("All repos were synced recently — skipped");
+        toast.info("Ecosystem data matches origin node — sync skipped");
       }
-
-      // Refresh sync status timestamp
       refetchSyncStatus();
     } catch (error) {
-      toast.error("Sync failed — check your GitHub token");
+      toast.error("Handshake failed — check integration parameters");
     } finally {
       setIsSyncing(false);
     }
   };
 
-  // Format the last synced timestamp nicely
   function formatSyncTime(dateStr) {
-    if (!dateStr) return "Never synced";
+    if (!dateStr) return "Pending initial connection";
     const date = new Date(dateStr);
-    return date.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    });
+    return (
+      date.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }) + " UTC"
+    );
   }
 
   const STAT_CARDS = [
     {
-      label: "Total Projects",
+      label: "Production Projects",
       value: projects.length,
       icon: FolderOpen,
       href: "/admin/projects",
     },
     {
-      label: "Unread Messages",
+      label: "Unread Submissions",
       value: unreadCount,
       icon: Inbox,
       href: "/admin/inbox",
       highlight: unreadCount > 0,
     },
-    {
-      label: "Published Posts",
-      value: publishedCount,
-      icon: FileText,
-      href: "/admin/blog",
-    },
-    {
-      label: "Drafts",
-      value: draftCount,
-      icon: FileText,
-      href: "/admin/blog",
-    },
+    { label: "Published Content", value: publishedCount, icon: FileText, href: "/admin/blog" },
+    { label: "Staged Drafts", value: draftCount, icon: FileText, href: "/admin/blog" },
   ];
 
   return (
-    <div className="max-w-5xl mx-auto">
-      {/* Page header */}
+    <div className="max-w-[1400px] mx-auto space-y-10 antialiased selection:bg-primary/20 selection:text-primary">
+      {/* Structural Header Context */}
       <motion.div
-        className="mb-8"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, x: -4 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="flex flex-col md:flex-row md:items-center justify-between border-b border-border pb-6 gap-4"
       >
-        <h1 className="text-2xl font-bold text-white mb-1">Dashboard</h1>
-        <p className="text-gray-500 text-sm">Manage your portfolio content</p>
+        <div>
+          <h1 className="text-sm font-black uppercase tracking-[0.2em] text-foreground">
+            System Architecture
+          </h1>
+          <p className="text-[11px] text-muted-foreground mt-1 font-mono tracking-tight">
+            Node status: active // Portfolio Core Content Management System
+          </p>
+        </div>
       </motion.div>
 
-      {/* Stat cards */}
+      {/* High-Contrast Analytical Metrics Matrix */}
       <motion.div
-        className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         variants={containerVariants}
         initial="hidden"
         animate="show"
@@ -169,83 +196,81 @@ export default function Dashboard() {
           <motion.div key={card.label} variants={fadeUp}>
             <Link
               to={card.href}
-              className={`flex flex-col gap-3 p-4 rounded-xl border transition-all duration-200 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5
+              className={`group flex flex-col justify-between p-5 h-32 rounded-xl border bg-card transition-all duration-200 select-none
                 ${
                   card.highlight
-                    ? "bg-blue-500/10 border-blue-500/20"
-                    : "bg-gray-900 border-white/5"
+                    ? "border-primary/40 bg-gradient-to-br from-card to-primary/[0.02] shadow-[0_0_20px_-5px_rgba(var(--primary),0.1)]"
+                    : "border-border hover:border-foreground/20 hover:bg-muted/30"
                 }`}
             >
-              <card.icon
-                size={18}
-                className={card.highlight ? "text-blue-400" : "text-gray-500"}
-              />
-              <div>
-                <p
-                  className={`text-2xl font-bold ${card.highlight ? "text-blue-400" : "text-white"}`}
-                >
-                  {card.value}
-                </p>
-                <p className="text-xs text-gray-500 mt-0.5">{card.label}</p>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+                  {card.label}
+                </span>
+                <card.icon
+                  size={14}
+                  strokeWidth={2}
+                  className={`transition-colors duration-200 ${card.highlight ? "text-primary" : "text-muted-foreground/60 group-hover:text-foreground"}`}
+                />
+              </div>
+              <div className="flex items-baseline">
+                <span className="text-3xl font-black tracking-tight font-mono text-foreground">
+                  {String(card.value).padStart(2, "0")}
+                </span>
               </div>
             </Link>
           </motion.div>
         ))}
       </motion.div>
 
-      {/* GitHub sync panel */}
+      {/* Integration Synchronizer */}
       <motion.div
-        className="bg-gray-900 border border-white/5 rounded-2xl p-5 mb-8"
         variants={fadeUp}
         initial="hidden"
         animate="show"
-        transition={{ delay: 0.2 }}
+        className="bg-card border border-border rounded-xl p-5 select-none hover:border-foreground/10 transition-colors duration-200"
       >
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20">
-              <FaGithub size={18} className="text-blue-400" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-lg bg-muted border border-border text-foreground shrink-0 flex items-center justify-center">
+              <FaGithub size={16} />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-white">GitHub Sync</h2>
-              <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+              <h2 className="text-xs font-bold uppercase tracking-[0.12em] text-foreground">
+                External VCS Pipeline
+              </h2>
+              <p className="text-[11px] text-muted-foreground mt-1 font-mono flex items-center gap-2">
                 {syncStatus?.lastSyncedAt ? (
                   <>
-                    <CheckCircle size={11} className="text-green-400" />
-                    Last synced: {formatSyncTime(syncStatus.lastSyncedAt)}
+                    <CheckCircle size={12} className="text-emerald-500 shrink-0" />
+                    Last safe handshake: {formatSyncTime(syncStatus.lastSyncedAt)}
                   </>
                 ) : (
-                  "Never synced"
+                  "VCS pipeline data unpopulated"
                 )}
               </p>
             </div>
           </div>
 
-          {/* Sync button */}
           <button
             onClick={handleSync}
             disabled={isSyncing}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all duration-200"
+            className="h-9 px-4 bg-primary text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors flex items-center justify-center gap-2 self-start sm:self-auto shrink-0 font-mono"
           >
-            <RefreshCw size={14} className={isSyncing ? "animate-spin" : ""} />
-            {isSyncing ? "Syncing..." : "Sync Now"}
+            <RefreshCw size={12} className={isSyncing ? "animate-spin" : ""} />
+            {isSyncing ? "Executing Pipeline..." : "Sync Workspace"}
           </button>
         </div>
       </motion.div>
 
-      {/* Quick nav links */}
-      <motion.div
-        variants={fadeUp}
-        initial="hidden"
-        animate="show"
-        transition={{ delay: 0.3 }}
-      >
-        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">
-          Manage Content
+      {/* System Routing Controls */}
+      <motion.div variants={fadeUp} initial="hidden" animate="show" className="space-y-4">
+        <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.25em] pl-0.5">
+          Workspace Modules
         </h2>
 
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
           variants={containerVariants}
           initial="hidden"
           animate="show"
@@ -254,17 +279,18 @@ export default function Dashboard() {
             <motion.div key={link.href} variants={fadeUp}>
               <Link
                 to={link.href}
-                className="flex items-center gap-3 p-4 rounded-xl bg-gray-900 border border-white/5 hover:border-blue-500/30 hover:bg-gray-800/50 transition-all duration-200 group"
+                className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border hover:border-foreground/20 hover:bg-muted/20 transition-all group duration-150"
               >
-                <div className="p-2 rounded-lg bg-white/5 group-hover:bg-blue-500/10 transition-colors">
-                  <link.icon
-                    size={16}
-                    className="text-gray-400 group-hover:text-blue-400 transition-colors"
-                  />
+                <div className="p-3 rounded-lg bg-muted border border-border group-hover:bg-foreground/[0.02] group-hover:border-foreground/20 transition-colors shrink-0 flex items-center justify-center text-muted-foreground/70 group-hover:text-foreground">
+                  <link.icon size={14} strokeWidth={2} />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-white">{link.label}</p>
-                  <p className="text-xs text-gray-500">{link.desc}</p>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-wider text-foreground transition-colors">
+                    {link.label}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground truncate mt-1">
+                    {link.desc}
+                  </p>
                 </div>
               </Link>
             </motion.div>

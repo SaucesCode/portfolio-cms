@@ -86,43 +86,49 @@ export default function ManageHero() {
   };
 
   const inputClass = `
-    w-full px-3 py-2 rounded-lg text-sm
-    bg-gray-800 border border-white/10
-    text-white placeholder:text-gray-600
-    focus:outline-none focus:border-blue-500/50
-    transition-all duration-200
+    w-full px-3 h-10 rounded-lg text-[11px] font-mono tracking-wide
+    bg-background border border-border
+    text-foreground placeholder:text-muted-foreground/40
+    focus:outline-none focus:border-foreground/20 focus:ring-1 focus:ring-foreground/10
+    transition-all duration-150
   `;
 
   if (isLoading)
     return (
-      <div className="flex justify-center py-12">
-        <div className="w-6 h-6 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+      <div className="flex justify-center py-24 select-none">
+        <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
       </div>
     );
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="w-full selection:bg-primary/10 selection:text-primary">
       {/* Page header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white mb-1">Hero Section</h1>
-        <p className="text-gray-500 text-sm">
-          Edit your name, bio, taglines and availability status
+      <div className="mb-6 select-none">
+        <h1 className="text-xs font-black uppercase tracking-[0.25em] text-foreground mb-1">
+          Hero Parameters
+        </h1>
+        <p className="text-[11px] font-mono text-muted-foreground">
+          Mutate operational branding context identity configuration properties
         </p>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-5">
           {/* Basic info card */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gray-900 border border-white/5 rounded-2xl p-6"
+            className="bg-card border border-border rounded-xl p-5 subpixel-antialiased shadow-sm"
           >
-            <h2 className="text-sm font-semibold text-white mb-4">Basic Info</h2>
+            <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4 border-b border-border/50 pb-2">
+              Identity Metadata
+            </h2>
 
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-gray-400">Name</label>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                  Core Operator Name
+                </label>
                 <input
                   name="name"
                   value={form.name}
@@ -133,14 +139,16 @@ export default function ManageHero() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-gray-400">Bio</label>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                  Executive Brief Bio
+                </label>
                 <textarea
                   name="bio"
                   value={form.bio}
                   onChange={handleChange}
                   placeholder="A short description about yourself"
                   rows={4}
-                  className={`${inputClass} resize-none`}
+                  className={`${inputClass} h-auto py-2.5 resize-none leading-relaxed font-sans text-xs`}
                 />
               </div>
             </div>
@@ -148,33 +156,39 @@ export default function ManageHero() {
 
           {/* Taglines card */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="bg-gray-900 border border-white/5 rounded-2xl p-6"
+            transition={{ delay: 0.04 }}
+            className="bg-card border border-border rounded-xl p-5 subpixel-antialiased shadow-sm"
           >
-            <h2 className="text-sm font-semibold text-white mb-1">Typewriter Taglines</h2>
-            <p className="text-xs text-gray-500 mb-4">
-              These cycle through the typewriter effect on your hero section
+            <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-1">
+              Dynamic Stream Arrays
+            </h2>
+            <p className="text-[10px] font-mono text-muted-foreground/70 mb-4 pb-2 border-b border-border/50">
+              Iterative character compilation arrays parsed via terminal effect pipelines
             </p>
 
             {/* Existing taglines */}
-            <div className="flex flex-col gap-2 mb-4">
+            <div className="flex flex-col gap-1.5 mb-4">
               {form.tagline.length === 0 && (
-                <p className="text-xs text-gray-600">No taglines yet — add one below</p>
+                <p className="text-[10px] font-mono text-muted-foreground/50 italic px-1 py-1">
+                  No vectors stored inside layout array stack
+                </p>
               )}
               {form.tagline.map((tag, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-800 border border-white/5"
+                  className="flex items-center justify-between px-3 h-9 rounded-lg bg-muted/40 border border-border/60 group"
                 >
-                  <span className="text-sm text-gray-300 font-mono">{tag}</span>
+                  <span className="text-[11px] font-mono text-foreground tracking-wide truncate pr-4">
+                    {tag}
+                  </span>
                   <button
                     type="button"
                     onClick={() => handleRemoveTagline(index)}
-                    className="p-1 text-gray-600 hover:text-red-400 transition-colors"
+                    className="p-1 -mr-1 text-muted-foreground/40 hover:text-destructive transition-colors cursor-pointer"
                   >
-                    <X size={13} />
+                    <X size={12} />
                   </button>
                 </div>
               ))}
@@ -186,7 +200,6 @@ export default function ManageHero() {
                 value={newTagline}
                 onChange={e => setNewTagline(e.target.value)}
                 onKeyDown={e => {
-                  // Allow pressing Enter to add tagline
                   if (e.key === "Enter") {
                     e.preventDefault();
                     handleAddTagline();
@@ -198,26 +211,30 @@ export default function ManageHero() {
               <button
                 type="button"
                 onClick={handleAddTagline}
-                className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-all whitespace-nowrap"
+                className="flex items-center gap-1.5 px-3.5 h-10 bg-muted border border-border hover:bg-muted/80 text-foreground text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors whitespace-nowrap cursor-pointer"
               >
-                <Plus size={14} />
-                Add
+                <Plus size={12} />
+                Append
               </button>
             </div>
           </motion.div>
 
           {/* Links card */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-gray-900 border border-white/5 rounded-2xl p-6"
+            transition={{ delay: 0.08 }}
+            className="bg-card border border-border rounded-xl p-5 subpixel-antialiased shadow-sm"
           >
-            <h2 className="text-sm font-semibold text-white mb-4">Links</h2>
+            <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4 border-b border-border/50 pb-2">
+              Resource Network Targets
+            </h2>
 
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-gray-400">Profile Image URL</label>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                  Static Avatar Frame URI
+                </label>
                 <input
                   name="profileImageUrl"
                   value={form.profileImageUrl}
@@ -227,20 +244,24 @@ export default function ManageHero() {
                 />
                 {/* Live preview */}
                 {form.profileImageUrl && (
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="flex items-center gap-2.5 mt-2 px-1 select-none">
                     <img
                       src={form.profileImageUrl}
                       alt="Preview"
-                      className="w-10 h-10 rounded-full object-cover border border-white/10"
+                      className="w-8 h-8 rounded-lg object-cover border border-border bg-muted/50"
                       onError={e => (e.target.style.display = "none")}
                     />
-                    <span className="text-xs text-gray-500">Preview</span>
+                    <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60">
+                      Asset Frame Stream Match
+                    </span>
                   </div>
                 )}
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-gray-400">Resume URL</label>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                  Secure File Manifest URI (Resume)
+                </label>
                 <input
                   name="resumeUrl"
                   value={form.resumeUrl}
@@ -254,16 +275,18 @@ export default function ManageHero() {
 
           {/* Availability card */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="bg-gray-900 border border-white/5 rounded-2xl p-6"
+            transition={{ delay: 0.12 }}
+            className="bg-card border border-border rounded-xl p-5 subpixel-antialiased shadow-sm"
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-semibold text-white mb-1">Available for Work</h2>
-                <p className="text-xs text-gray-500">
-                  Shows the pulsing green badge on your navbar and hero section
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0 flex-1 select-none">
+                <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-0.5">
+                  Pipeline Telemetry Broadcast
+                </h2>
+                <p className="text-[10px] font-mono text-muted-foreground/70">
+                  Global system availability pulsing telemetry visual notification target nodes
                 </p>
               </div>
 
@@ -276,25 +299,25 @@ export default function ManageHero() {
                     availableForWork: !prev.availableForWork,
                   }))
                 }
-                className={`relative w-11 h-6 rounded-full transition-colors duration-200
-                  ${form.availableForWork ? "bg-blue-600" : "bg-gray-700"}`}
+                className={`relative w-9 h-5 rounded-full transition-colors duration-150 shrink-0 cursor-pointer border border-transparent
+                  ${form.availableForWork ? "bg-primary" : "bg-muted border-border"}`}
               >
                 <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200
-                  ${form.availableForWork ? "translate-x-5" : "translate-x-0"}`}
+                  className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-transform duration-150
+                  ${form.availableForWork ? "translate-x-4 bg-primary-foreground" : "translate-x-0"}`}
                 />
               </button>
             </div>
 
             {/* Status indicator */}
             {form.availableForWork && (
-              <div className="flex items-center gap-2 mt-4 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
+              <div className="flex items-center gap-2 mt-4 px-3 h-8 rounded-lg bg-foreground/[0.02] border border-border/80 select-none">
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-400" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
                 </span>
-                <span className="text-xs text-green-400">
-                  Badge is currently showing on your portfolio
+                <span className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
+                  Active connection beacon running on core cluster layout
                 </span>
               </div>
             )}
@@ -304,15 +327,25 @@ export default function ManageHero() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.16 }}
+            className="flex justify-end pt-1"
           >
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-all"
+              className="flex items-center gap-2 px-5 h-10 bg-primary text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors border border-transparent hover:bg-primary/90 cursor-pointer shadow-sm"
             >
-              <Check size={16} />
-              {isSubmitting ? "Saving..." : "Save Changes"}
+              {isSubmitting ? (
+                <>
+                  <div className="w-3.5 h-3.5 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
+                  <span>Syncing Pipeline...</span>
+                </>
+              ) : (
+                <>
+                  <Check size={13} />
+                  <span>Commit Transmit</span>
+                </>
+              )}
             </button>
           </motion.div>
         </div>

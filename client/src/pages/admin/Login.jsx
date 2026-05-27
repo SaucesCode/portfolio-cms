@@ -46,64 +46,72 @@ export default function AdminLogin() {
   };
 
   const inputClass = `
-    w-full px-4 py-2.5 rounded-lg text-sm
-    bg-gray-900 border border-white/10
-    text-white placeholder:text-gray-600
-    focus:outline-none focus:border-blue-500/50
-    transition-all duration-200
+    w-full px-4 h-10 rounded-lg text-[11px] font-mono tracking-wide
+    bg-background border border-border
+    text-foreground placeholder:text-muted-foreground/40
+    focus:outline-none focus:border-foreground/20 focus:ring-1 focus:ring-foreground/10
+    transition-all duration-150
   `;
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-6">
-      {/* Subtle glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-background text-foreground antialiased flex items-center justify-center px-6 selection:bg-primary/10 selection:text-primary relative overflow-hidden">
+      {/* Structural Subtle Workspace Grid Background Glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/[0.02] rounded-full blur-3xl pointer-events-none select-none" />
 
       <motion.div
-        className="relative w-full max-w-sm"
-        initial={{ opacity: 0, y: 20 }}
+        className="relative w-full max-w-[360px]"
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ type: "spring", stiffness: 350, damping: 28 }}
       >
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 mb-4">
-            <Lock size={20} className="text-blue-400" />
+        {/* Header Layout */}
+        <div className="text-center mb-6 select-none">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary text-primary-foreground font-mono font-black text-sm tracking-wider mb-4 shadow-sm">
+            VCS
           </div>
-          <h1 className="text-xl font-bold text-white mb-1">Admin Login</h1>
-          <p className="text-gray-500 text-sm">Sign in to manage your portfolio</p>
+          <h1 className="text-xs font-black uppercase tracking-[0.25em] text-foreground mb-1">
+            Core Authentication
+          </h1>
+          <p className="text-[11px] font-mono text-muted-foreground">
+            Sign in to access secure system infrastructure
+          </p>
         </div>
 
-        {/* Form */}
+        {/* Form Container Frame */}
         <form
           onSubmit={handleSubmit}
-          className="bg-gray-900 border border-white/5 rounded-2xl p-6 flex flex-col gap-4"
+          className="bg-card border border-border rounded-xl p-5 flex flex-col gap-4 shadow-[0_8px_30px_rgb(0,0,0,0.12)] subpixel-antialiased"
         >
-          {/* Email */}
+          {/* Email Form Field Block */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-400">Email</label>
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] px-0.5">
+              Email Node Address
+            </label>
             <div className="relative">
               <Mail
-                size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600"
+                size={13}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50"
               />
               <input
                 type="email"
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="admin@portfolio.com"
+                placeholder="admin@vcs.node"
                 className={`${inputClass} pl-9`}
               />
             </div>
           </div>
 
-          {/* Password */}
+          {/* Password Form Field Block */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-400">Password</label>
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] px-0.5">
+              Secure Key Token
+            </label>
             <div className="relative">
               <Lock
-                size={15}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600"
+                size={13}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50"
               />
               <input
                 type={showPassword ? "text" : "password"}
@@ -113,38 +121,38 @@ export default function AdminLogin() {
                 placeholder="••••••••"
                 className={`${inputClass} pl-9 pr-9`}
               />
-              {/* Toggle password visibility */}
+              {/* Toggle visibility input decorator */}
               <button
                 type="button"
                 onClick={() => setShowPassword(prev => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors cursor-pointer"
               >
-                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
               </button>
             </div>
           </div>
 
-          {/* Submit */}
+          {/* Action Processing Handler */}
           <button
             type="submit"
             disabled={isLoading}
-            className="flex items-center justify-center gap-2 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all duration-200 mt-2"
+            className="flex items-center justify-center gap-2 h-10 bg-primary text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors border border-transparent hover:bg-primary/90 mt-1 cursor-pointer"
           >
             {isLoading ? (
               <>
-                <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                Signing in...
+                <div className="w-3.5 h-3.5 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
+                <span>Verifying Token...</span>
               </>
             ) : (
-              "Sign In"
+              <span>Establish Handshake</span>
             )}
           </button>
         </form>
 
-        {/* Back to portfolio link */}
-        <p className="text-center text-xs text-gray-600 mt-6">
-          <a href="/" className="hover:text-gray-400 transition-colors">
-            ← Back to portfolio
+        {/* Dynamic Context Root Exit Node */}
+        <p className="text-center text-[10px] font-mono uppercase tracking-wider text-muted-foreground/70 mt-6 select-none">
+          <a href="/" className="hover:text-foreground transition-colors">
+            ← Disconnect Core Pipeline
           </a>
         </p>
       </motion.div>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Pencil, Trash2, X, Check, Quote, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Check, Eye, EyeOff } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "../../services/api";
 
@@ -100,7 +100,6 @@ export default function ManageTestimonials() {
     }
   };
 
-  // Quick toggle visible without opening the form
   const handleToggleVisible = async testimonial => {
     try {
       await api.patch(`/admin/testimonials/${testimonial.id}`, {
@@ -115,28 +114,40 @@ export default function ManageTestimonials() {
   };
 
   const inputClass = `
-    w-full px-3 py-2 rounded-lg text-sm
-    bg-gray-800 border border-white/10
-    text-white placeholder:text-gray-600
-    focus:outline-none focus:border-blue-500/50
-    transition-all duration-200
+    w-full px-3 h-10 rounded-lg text-[11px] font-mono tracking-wide
+    bg-background border border-border
+    text-foreground placeholder:text-muted-foreground/40
+    focus:outline-none focus:border-foreground/20 focus:ring-1 focus:ring-foreground/10
+    transition-all duration-150
   `;
 
+  if (isLoading)
+    return (
+      <div className="flex justify-center py-24 select-none">
+        <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    );
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full selection:bg-primary/10 selection:text-primary">
       {/* Page header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6 select-none">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-1">Testimonials</h1>
-          <p className="text-gray-500 text-sm">{testimonials.length} testimonials</p>
+          <h1 className="text-xs font-black uppercase tracking-[0.25em] text-foreground mb-1">
+            Testimonial Matrix
+          </h1>
+          <p className="text-[11px] font-mono text-muted-foreground">
+            Mutate and organize compiled professional recommendation nodes (
+            {testimonials.length} records)
+          </p>
         </div>
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-all"
+            className="flex items-center gap-1.5 px-3.5 h-10 bg-primary text-primary-foreground text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors hover:bg-primary/90 cursor-pointer shadow-sm"
           >
-            <Plus size={16} />
-            Add Testimonial
+            <Plus size={12} />
+            Initialize Node
           </button>
         )}
       </div>
@@ -145,19 +156,21 @@ export default function ManageTestimonials() {
       <AnimatePresence>
         {showForm && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-gray-900 border border-white/5 rounded-2xl p-6 mb-6"
+            exit={{ opacity: 0, y: 8 }}
+            className="bg-card border border-border rounded-xl p-5 subpixel-antialiased shadow-sm mb-5"
           >
-            <h2 className="text-sm font-semibold text-white mb-4">
-              {editingId ? "Edit Testimonial" : "Add Testimonial"}
+            <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4 border-b border-border/50 pb-2">
+              {editingId ? "Edit Configuration Registry" : "New Configuration Registry"}
             </h2>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-gray-400">Name</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                    Attribution Name
+                  </label>
                   <input
                     name="name"
                     value={form.name}
@@ -168,7 +181,9 @@ export default function ManageTestimonials() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-gray-400">Role</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                    Role Title Vector
+                  </label>
                   <input
                     name="role"
                     value={form.role}
@@ -179,7 +194,9 @@ export default function ManageTestimonials() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-gray-400">Company</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                    Company Entity
+                  </label>
                   <input
                     name="company"
                     value={form.company}
@@ -190,7 +207,9 @@ export default function ManageTestimonials() {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs text-gray-400">Order</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                    Order Sequence Index
+                  </label>
                   <input
                     type="number"
                     name="orderIndex"
@@ -201,7 +220,9 @@ export default function ManageTestimonials() {
                 </div>
 
                 <div className="flex flex-col gap-1.5 sm:col-span-2">
-                  <label className="text-xs text-gray-400">Avatar URL (optional)</label>
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                    Avatar Image Asset Source URL (Optional)
+                  </label>
                   <input
                     name="avatarUrl"
                     value={form.avatarUrl}
@@ -210,51 +231,61 @@ export default function ManageTestimonials() {
                     className={inputClass}
                   />
                 </div>
-
-                <div className="flex flex-col gap-1.5 sm:col-span-2">
-                  <label className="text-xs text-gray-400">Quote</label>
-                  <textarea
-                    name="quote"
-                    value={form.quote}
-                    onChange={handleChange}
-                    placeholder="What did they say about you?"
-                    rows={3}
-                    className={`${inputClass} resize-none`}
-                  />
-                </div>
-
-                {/* Visible toggle */}
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="visible"
-                    name="visible"
-                    checked={form.visible}
-                    onChange={handleChange}
-                    className="w-4 h-4 accent-blue-500"
-                  />
-                  <label htmlFor="visible" className="text-sm text-gray-300 cursor-pointer">
-                    Visible on public site
-                  </label>
-                </div>
               </div>
 
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm rounded-lg transition-all"
+              {/* Quote */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                  Recommendation Text Manifest
+                </label>
+                <textarea
+                  name="quote"
+                  value={form.quote}
+                  onChange={handleChange}
+                  placeholder="What did they say about your professional contributions?"
+                  rows={3}
+                  className={`${inputClass} h-auto py-2.5 resize-none leading-relaxed font-sans text-xs`}
+                />
+              </div>
+
+              {/* Visibility Switch */}
+              <div className="flex items-center justify-between gap-4 h-10 border border-dashed border-border rounded-lg px-3 mt-1 select-none w-full sm:w-72">
+                <label
+                  htmlFor="visible"
+                  className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] cursor-pointer"
                 >
-                  <Check size={15} />
-                  {isSubmitting ? "Saving..." : editingId ? "Update" : "Add"}
+                  Flag as Publicly Active
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setForm(prev => ({ ...prev, visible: !prev.visible }))}
+                  className={`relative w-9 h-5 rounded-full transition-colors duration-150 shrink-0 cursor-pointer border border-transparent
+                    ${form.visible ? "bg-primary" : "bg-muted border-border"}`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-transform duration-150
+                    ${form.visible ? "translate-x-4 bg-primary-foreground" : "translate-x-0"}`}
+                  />
                 </button>
+              </div>
+
+              {/* Form actions */}
+              <div className="flex justify-end gap-2 pt-1 border-t border-border/50 mt-2">
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="flex items-center gap-2 px-4 py-2 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white text-sm rounded-lg transition-all"
+                  className="flex items-center gap-1.5 px-4 h-10 border border-border text-muted-foreground hover:text-foreground hover:bg-muted/30 text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
                 >
-                  <X size={15} />
-                  Cancel
+                  <X size={12} />
+                  Abort
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex items-center gap-1.5 px-4 h-10 bg-primary text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer shadow-sm"
+                >
+                  <Check size={12} />
+                  {isSubmitting ? "Syncing..." : editingId ? "Commit Changes" : "Write Record"}
                 </button>
               </div>
             </form>
@@ -263,89 +294,96 @@ export default function ManageTestimonials() {
       </AnimatePresence>
 
       {/* Testimonials list */}
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="w-6 h-6 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+      {testimonials.length === 0 ? (
+        <div className="text-center py-16 border border-dashed border-border rounded-xl bg-card select-none">
+          <p className="text-[11px] font-mono text-muted-foreground/50 italic">
+            Zero endorsement target arrays detected inside matrix.
+          </p>
         </div>
-      ) : testimonials.length === 0 ? (
-        <div className="text-center py-16 text-gray-600">No testimonials yet.</div>
       ) : (
         <div className="flex flex-col gap-3">
           {testimonials.map((testimonial, index) => (
             <motion.div
               key={testimonial.id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`bg-gray-900 border rounded-2xl p-5 transition-colors
-                ${
-                  testimonial.visible
-                    ? "border-white/5 hover:border-blue-500/10"
-                    : "border-white/5 opacity-50"
-                }`}
+              transition={{ delay: index * 0.03 }}
+              className={`bg-card border rounded-xl p-4 subpixel-antialiased shadow-sm transition-colors group
+                ${testimonial.visible ? "border-border hover:border-foreground/10" : "border-border/40 opacity-40"}`}
             >
               <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  {/* Avatar */}
+                <div className="min-w-0 flex-1 flex items-start gap-3.5">
+                  {/* Dynamic Avatar Node */}
                   {testimonial.avatarUrl ? (
                     <img
                       src={testimonial.avatarUrl}
                       alt={testimonial.name}
-                      className="w-10 h-10 rounded-full object-cover border border-white/10 flex-shrink-0"
+                      className="w-8 h-8 rounded-full object-cover border border-border/60 shrink-0 select-none"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xs font-semibold flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-primary/5 border border-primary/10 flex items-center justify-center text-primary text-[10px] font-mono font-bold shrink-0 select-none">
                       {testimonial.name
                         .split(" ")
                         .map(n => n[0])
                         .join("")
-                        .slice(0, 2)}
+                        .slice(0, 2)
+                        .toUpperCase()}
                     </div>
                   )}
 
-                  <div className="flex-1">
-                    {/* Name + role */}
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <h3 className="text-sm font-semibold text-white">{testimonial.name}</h3>
+                  <div className="min-w-0 flex-1">
+                    {/* Name + corporate meta details */}
+                    <div className="flex items-center gap-2 mb-1 select-none">
+                      <h3 className="text-xs font-bold text-foreground tracking-wide truncate">
+                        {testimonial.name}
+                      </h3>
+                      <span className="font-mono text-muted-foreground/40 text-[11px]">/</span>
+                      <span className="text-[11px] font-mono text-muted-foreground tracking-tight truncate">
+                        {testimonial.role} at {testimonial.company}
+                      </span>
                       {!testimonial.visible && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-500 border border-white/5">
-                          Hidden
+                        <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground border border-border/50">
+                          Offline
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-400 mb-2">
-                      {testimonial.role} · {testimonial.company}
+
+                    {/* Quote text node */}
+                    <p className="text-[11px] text-muted-foreground font-sans leading-relaxed line-clamp-2 mb-2">
+                      “{testimonial.quote}”
                     </p>
 
-                    {/* Quote */}
-                    <p className="text-sm text-gray-400 italic line-clamp-2">
-                      <Quote size={12} className="inline mr-1 text-blue-500/40" />
-                      {testimonial.quote}
-                    </p>
+                    {/* Sequence tracking matrix bar */}
+                    <div className="text-[9px] font-mono text-muted-foreground/40 select-none">
+                      SEQ_IDX: {testimonial.orderIndex}
+                    </div>
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-1 flex-shrink-0">
-                  {/* Quick visibility toggle */}
+                {/* Actions grid array */}
+                <div className="flex gap-1 shrink-0 select-none">
                   <button
                     onClick={() => handleToggleVisible(testimonial)}
-                    className="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg transition-all"
-                    title={testimonial.visible ? "Hide" : "Show"}
+                    className="p-1.5 text-muted-foreground/50 hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
+                    title={
+                      testimonial.visible
+                        ? "Deactivate node deployment"
+                        : "Activate node deployment"
+                    }
                   >
-                    {testimonial.visible ? <Eye size={14} /> : <EyeOff size={14} />}
+                    {testimonial.visible ? <Eye size={13} /> : <EyeOff size={13} />}
                   </button>
                   <button
                     onClick={() => handleEdit(testimonial)}
-                    className="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                    className="p-1.5 text-muted-foreground/50 hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
                   >
-                    <Pencil size={14} />
+                    <Pencil size={13} />
                   </button>
                   <button
                     onClick={() => handleDelete(testimonial.id)}
-                    className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+                    className="p-1.5 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={13} />
                   </button>
                 </div>
               </div>

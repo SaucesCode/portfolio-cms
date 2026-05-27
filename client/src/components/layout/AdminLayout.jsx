@@ -21,7 +21,7 @@ import { toast } from "react-toastify";
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Hero", href: "/admin/hero", icon: User },
-  { label: "Projects", href: "/admin/projects", icon: FolderOpen },
+  { path: "/admin/projects", label: "Projects", href: "/admin/projects", icon: FolderOpen },
   { label: "Skills", href: "/admin/skills", icon: Wrench },
   { label: "Experience", href: "/admin/experience", icon: Briefcase },
   { label: "Certifications", href: "/admin/certifications", icon: Award },
@@ -43,26 +43,41 @@ export default function AdminLayout({ children }) {
   };
 
   const navLinkClass = ({ isActive }) => `
-    flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200
+    flex items-center gap-3 px-3 h-9 rounded-lg text-[11px] font-medium uppercase tracking-[0.08em] transition-all duration-150 relative group
     ${
       isActive
-        ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-        : "text-gray-400 hover:text-white hover:bg-white/5"
+        ? "bg-foreground/[0.03] text-foreground font-bold border border-border/80 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
+        : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
     }
   `;
 
   const Sidebar = () => (
-    <aside className="flex flex-col h-full bg-gray-900 border-r border-white/5 w-56 p-4">
+    <aside className="flex flex-col h-full bg-card border-r border-border w-56 p-4 select-none subpixel-antialiased">
       {/* Logo */}
-      <div className="flex items-center gap-2 px-3 py-2 mb-6">
-        <div className="w-6 h-6 rounded-md bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
-          <span className="text-blue-400 text-xs font-bold">P</span>
+      <div className="flex items-center justify-between mb-6 px-1">
+        <div className="flex items-center gap-3 overflow-hidden min-w-0">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground font-mono font-black text-xs tracking-wider shadow-sm">
+            VCS
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-foreground block truncate">
+              Core Console
+            </span>
+            <span className="text-[9px] font-mono text-muted-foreground/80 block truncate">
+              v2026.4.1
+            </span>
+          </div>
         </div>
-        <span className="text-white font-semibold text-sm">Portfolio Admin</span>
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="md:hidden p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+        >
+          <X size={14} />
+        </button>
       </div>
 
       {/* Nav links */}
-      <nav className="flex flex-col gap-1 flex-1">
+      <nav className="flex flex-col gap-0.5 flex-1 overflow-y-auto scrollbar-none pr-0.5">
         {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
           <NavLink
             key={href}
@@ -71,20 +86,47 @@ export default function AdminLayout({ children }) {
             className={navLinkClass}
             onClick={() => setSidebarOpen(false)}
           >
-            <Icon size={16} />
-            {label}
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute left-[-16px] top-2 bottom-2 w-[3px] rounded-r-full bg-primary" />
+                )}
+                <Icon
+                  size={14}
+                  strokeWidth={isActive ? 2.2 : 1.8}
+                  className={
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground/60 group-hover:text-foreground transition-colors"
+                  }
+                />
+                <span className="truncate">{label}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
 
       {/* User + logout */}
-      <div className="border-t border-white/5 pt-4 mt-4">
-        <p className="text-xs text-gray-600 px-3 mb-2 truncate">{user?.email}</p>
+      <div className="border-t border-border pt-4 mt-4 shrink-0 bg-card">
+        <div className="flex items-center gap-3 px-1.5 mb-3 overflow-hidden">
+          <div className="h-7 w-7 rounded-lg bg-muted border border-border flex items-center justify-center shrink-0">
+            <User size={12} className="text-muted-foreground" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[11px] font-bold tracking-wide truncate text-foreground block">
+              {user?.email?.split("@")[0] || "Operator"}
+            </span>
+            <span className="text-[9px] font-mono text-muted-foreground truncate uppercase block">
+              {user?.email || "root@vcs.node"}
+            </span>
+          </div>
+        </div>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-red-400 hover:bg-red-400/5 transition-all duration-200 w-full"
+          className="flex items-center gap-3 px-3 h-9 rounded-lg text-[11px] font-mono font-bold uppercase tracking-wider text-muted-foreground hover:text-destructive hover:bg-destructive/5 border border-transparent hover:border-destructive/10 transition-all duration-150 w-full cursor-pointer"
         >
-          <LogOut size={16} />
+          <LogOut size={13} />
           Logout
         </button>
       </div>
@@ -92,9 +134,9 @@ export default function AdminLayout({ children }) {
   );
 
   return (
-    <div className="min-h-screen bg-gray-950 flex">
-      {/* Desktop sidebar — always visible */}
-      <div className="hidden md:flex flex-shrink-0">
+    <div className="min-h-screen bg-background text-foreground antialiased flex selection:bg-primary/10 selection:text-primary">
+      {/* Desktop sidebar — locked viewport containment layout */}
+      <div className="hidden md:flex flex-shrink-0 sticky top-0 h-screen z-40">
         <Sidebar />
       </div>
 
@@ -103,10 +145,10 @@ export default function AdminLayout({ children }) {
         <div className="md:hidden fixed inset-0 z-50 flex">
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity duration-200"
             onClick={() => setSidebarOpen(false)}
           />
-          <div className="relative z-10 flex-shrink-0">
+          <div className="relative z-10 flex-shrink-0 h-full animate-in slide-in-from-left duration-200">
             <Sidebar />
           </div>
         </div>
@@ -115,18 +157,27 @@ export default function AdminLayout({ children }) {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile topbar */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-white/5 bg-gray-900">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-1.5 text-gray-400 hover:text-white"
-          >
-            <Menu size={20} />
-          </button>
-          <span className="text-white font-semibold text-sm">Portfolio Admin</span>
+        <div className="md:hidden flex items-center justify-between px-4 h-16 border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 -ml-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+            >
+              <Menu size={18} />
+            </button>
+            <span className="text-xs font-black uppercase tracking-[0.2em] text-foreground">
+              Core Console
+            </span>
+          </div>
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-mono font-black text-xs tracking-wider">
+            V
+          </div>
         </div>
 
         {/* Page content */}
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-6 md:p-10 overflow-x-hidden overflow-y-auto">
+          {children}
+        </main>
       </div>
     </div>
   );
