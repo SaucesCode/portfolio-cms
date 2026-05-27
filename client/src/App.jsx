@@ -5,9 +5,8 @@ import PrivateRoute from "./components/layout/PrivateRoute";
 import Hero from "./components/sections/Hero";
 import Stats from "./components/sections/Stats";
 import Projects from "./components/sections/Projects";
-import Skills from "./components/sections/Skills";
 import Experience from "./components/sections/Experience";
-import Certifications from "./components/sections/Certifications";
+import SkillsAndCerts from "./components/sections/SkillsAndCerts";
 import Testimonials from "./components/sections/Testimonials";
 import Blog from "./components/sections/Blog";
 import Contact from "./components/sections/Contact";
@@ -25,12 +24,13 @@ import ManageBlog from "./pages/admin/ManageBlog";
 import Inbox from "./pages/admin/Inbox";
 import ManageTestimonials from "./pages/admin/ManageTestimonials";
 import SEO from "./components/SEO";
-import SkillsAndCerts from "./components/sections/SkillsAndCerts";
+import ScrollToTop from "./components/ScrollToTop";
 
 function App() {
   return (
     <>
       <CustomCursor />
+      <ScrollToTop />
       <Routes>
         {/* Public portfolio */}
         <Route

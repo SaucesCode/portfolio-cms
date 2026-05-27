@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Award, ExternalLink, Calendar, ChevronRight } from "lucide-react";
+import { Award, ExternalLink, Calendar } from "lucide-react";
 import { useSkills } from "../../hooks/useSkills";
 import { useCertifications } from "../../hooks/useCertifications";
 
@@ -10,61 +10,71 @@ const CATEGORY_ORDER = ["Frontend", "Backend", "Tools", "Other"];
 const CATEGORY_META = {
   Frontend: {
     accent: "text-blue-500",
-    bg: "bg-blue-500/8",
-    border: "border-blue-500/15",
-    num: "01",
+    bar: "bg-blue-500",
+    border: "hover:border-blue-500/30",
+    labelColor: "#3B82F6",
   },
   Backend: {
     accent: "text-violet-500",
-    bg: "bg-violet-500/8",
-    border: "border-violet-500/15",
-    num: "02",
+    bar: "bg-violet-500",
+    border: "hover:border-violet-500/30",
+    labelColor: "#8B5CF6",
   },
   Tools: {
     accent: "text-emerald-500",
-    bg: "bg-emerald-500/8",
-    border: "border-emerald-500/15",
-    num: "03",
+    bar: "bg-emerald-500",
+    border: "hover:border-emerald-500/30",
+    labelColor: "#10B981",
   },
   Other: {
     accent: "text-amber-500",
-    bg: "bg-amber-500/8",
-    border: "border-amber-500/15",
-    num: "04",
+    bar: "bg-amber-500",
+    border: "hover:border-amber-500/30",
+    labelColor: "#F59E0B",
   },
 };
 
 /* ── helpers ─────────────────────────────────────────────────── */
 function formatDate(d) {
   if (!d) return "";
-  return new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  return new Date(d).toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
 }
 
 /* ── SkillTag ────────────────────────────────────────────────── */
-function SkillTag({ skill, accent, bg, border }) {
+function SkillTag({ skill, meta }) {
   const pct = (skill.proficiencyLevel / 5) * 100;
+
   return (
     <motion.div
-      variants={{ hidden: { opacity: 0, scale: 0.94 }, show: { opacity: 1, scale: 1 } }}
-      transition={{ duration: 0.25 }}
-      className={`group relative overflow-hidden rounded-xl border ${border} ${bg} px-3.5 py-2.5 cursor-default`}
+      variants={{
+        hidden: { opacity: 0, y: 8 },
+        show: { opacity: 1, y: 0 },
+      }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      className={`group relative overflow-hidden rounded-xl border border-border bg-card px-3.5 py-3 cursor-default transition-colors duration-150 ${meta.border}`}
     >
-      <span className={`block text-[12px] font-semibold ${accent} leading-none mb-2`}>
+      {/* Skill name */}
+      <span className="block text-[13px] font-semibold text-foreground mb-2.5 truncate">
         {skill.name}
       </span>
+
       {/* Proficiency bar */}
       <div className="h-[2px] w-full overflow-hidden rounded-full bg-border">
         <motion.div
-          className={`h-full rounded-full ${accent.replace("text-", "bg-")}`}
+          className={`h-full rounded-full ${meta.bar}`}
           initial={{ width: 0 }}
           whileInView={{ width: `${pct}%` }}
           viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.8, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
         />
       </div>
-      {/* Level label — appears on hover */}
+
+      {/* Level on hover */}
       <span
-        className={`absolute right-2 top-2 text-[9px] font-black opacity-0 group-hover:opacity-100 transition-opacity ${accent}`}
+        className={`absolute top-2.5 right-2.5 text-[9px] font-black opacity-0 group-hover:opacity-100 transition-opacity duration-150 ${meta.accent}`}
       >
         {skill.proficiencyLevel}/5
       </span>
@@ -81,58 +91,49 @@ function SkillsTab({ skills }) {
   }, {});
 
   return (
-    <div className="flex flex-col gap-0 divide-y divide-border">
+    <div className="flex flex-col gap-10">
       {Object.entries(grouped).map(([category, items], idx) => {
         const meta = CATEGORY_META[category] ?? CATEGORY_META.Other;
+
         return (
           <motion.div
             key={category}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ delay: idx * 0.07, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="py-8 grid grid-cols-1 md:grid-cols-[160px_1fr] gap-6 md:gap-10 items-start"
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{
+              delay: idx * 0.06,
+              duration: 0.5,
+              ease: [0.16, 1, 0.3, 1],
+            }}
           >
-            {/* Category label column */}
-            <div className="flex md:flex-col items-center md:items-start gap-3 md:gap-2 md:pt-1">
+            {/* Category header row */}
+            <div className="flex items-center gap-3 mb-4">
               <span
-                className={`text-[10px] font-black opacity-20 select-none`}
-                style={{
-                  fontSize: "clamp(28px, 4vw, 40px)",
-                  lineHeight: 1,
-                  letterSpacing: "-0.04em",
-                }}
+                className="text-[11px] font-black uppercase tracking-[0.14em]"
+                style={{ color: meta.labelColor }}
               >
-                {meta.num}
+                {category}
               </span>
-              <div>
-                <span
-                  className={`block text-[11px] font-black uppercase tracking-[0.14em] ${meta.accent}`}
-                >
-                  {category}
-                </span>
-                <span className="text-[10px] text-muted-foreground/40 font-medium">
-                  {items.length} {items.length === 1 ? "skill" : "skills"}
-                </span>
-              </div>
+              <span className="text-[11px] text-muted-foreground/40 font-medium">
+                {items.length} {items.length === 1 ? "skill" : "skills"}
+              </span>
+              <div className="flex-1 h-px bg-border" />
             </div>
 
             {/* Skills grid */}
             <motion.div
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2"
-              variants={{ hidden: {}, show: { transition: { staggerChildren: 0.04 } } }}
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2"
+              variants={{
+                hidden: {},
+                show: { transition: { staggerChildren: 0.04 } },
+              }}
               initial="hidden"
               whileInView="show"
-              viewport={{ once: true, margin: "-40px" }}
+              viewport={{ once: true, margin: "-30px" }}
             >
               {items.map(skill => (
-                <SkillTag
-                  key={skill.id}
-                  skill={skill}
-                  accent={meta.accent}
-                  bg={meta.bg}
-                  border={meta.border}
-                />
+                <SkillTag key={skill.id} skill={skill} meta={meta} />
               ))}
             </motion.div>
           </motion.div>
@@ -145,55 +146,63 @@ function SkillsTab({ skills }) {
 /* ── CertsTab ────────────────────────────────────────────────── */
 function CertsTab({ certifications }) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {certifications.map((cert, i) => (
+    <motion.div
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
+      initial="hidden"
+      animate="show"
+    >
+      {certifications.map(cert => (
         <motion.a
           key={cert.id}
           href={cert.credentialUrl || undefined}
           target="_blank"
           rel="noopener noreferrer"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-40px" }}
-          transition={{ delay: i * 0.06, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className={`group relative flex flex-col gap-0 rounded-2xl border border-border bg-card overflow-hidden transition-all duration-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-600/5 ${cert.credentialUrl ? "cursor-pointer" : "cursor-default"}`}
+          variants={{
+            hidden: { opacity: 0, y: 16 },
+            show: { opacity: 1, y: 0 },
+          }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className={`group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-colors duration-200 hover:border-blue-500/30 ${
+            cert.credentialUrl ? "cursor-pointer" : "cursor-default"
+          }`}
         >
-          {/* Colored top strip */}
-          <div className="h-1 w-full bg-gradient-to-r from-blue-600 to-violet-600 opacity-30 group-hover:opacity-100 transition-opacity duration-300" />
+          {/* Color strip */}
+          <div className="h-[3px] w-full bg-gradient-to-r from-blue-600 to-violet-600 opacity-25 group-hover:opacity-100 transition-opacity duration-300" />
 
-          <div className="flex flex-col gap-4 p-5">
-            {/* Icon row */}
+          <div className="flex flex-col gap-4 p-5 flex-1">
+            {/* Icon + View link */}
             <div className="flex items-start justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/8 border border-blue-500/15">
-                <Award size={18} className="text-blue-500" strokeWidth={1.8} />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/8 border border-blue-500/15">
+                <Award size={16} className="text-blue-500" strokeWidth={1.8} />
               </div>
               {cert.credentialUrl && (
-                <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/30 group-hover:text-blue-500 transition-colors">
+                <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/25 group-hover:text-blue-500 transition-colors duration-200">
                   View
-                  <ExternalLink size={10} />
-                </div>
+                  <ExternalLink size={9} />
+                </span>
               )}
             </div>
 
-            {/* Name */}
-            <div>
-              <h3 className="text-[14px] font-bold leading-snug tracking-tight text-foreground mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            {/* Name + issuer */}
+            <div className="flex-1">
+              <h3 className="text-[13.5px] font-bold leading-snug tracking-tight text-foreground mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
                 {cert.name}
               </h3>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/50">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/45">
                 {cert.issuer}
               </p>
             </div>
 
-            {/* Date */}
-            <div className="mt-auto flex items-center gap-1.5 text-[11px] text-muted-foreground/35 pt-2 border-t border-border">
-              <Calendar size={11} />
+            {/* Date footer */}
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/35 pt-3 border-t border-border">
+              <Calendar size={10} />
               Issued {formatDate(cert.issueDate)}
             </div>
           </div>
         </motion.a>
       ))}
-    </div>
+    </motion.div>
   );
 }
 
@@ -220,7 +229,7 @@ export default function SkillsAndCerts() {
       id="skills"
       className="relative overflow-hidden bg-background border-y border-border"
     >
-      {/* Grain */}
+      {/* Grain texture */}
       <div
         className="pointer-events-none absolute inset-0 opacity-25"
         style={{
@@ -229,7 +238,7 @@ export default function SkillsAndCerts() {
         }}
       />
 
-      {/* Grid lines dark only */}
+      {/* Grid lines — dark only */}
       <div
         className="pointer-events-none absolute inset-0 hidden dark:block"
         style={{
@@ -247,7 +256,7 @@ export default function SkillsAndCerts() {
       <div className="pointer-events-none absolute top-0 right-0 z-0 h-[400px] w-[400px] rounded-full bg-blue-600/6 dark:bg-blue-500/8 blur-[100px]" />
 
       <div className="relative z-10 mx-auto max-w-[1280px] px-6 md:px-14 py-20">
-        {/* ── Section header ───────────────────────────────────── */}
+        {/* ── Section header ─────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -263,7 +272,7 @@ export default function SkillsAndCerts() {
             </span>
           </div>
 
-          {/* Split headline — matches hero style */}
+          {/* Headline */}
           <div
             className="flex flex-wrap items-end gap-x-4 gap-y-0 leading-[0.9] tracking-[-0.04em] font-black"
             style={{ fontSize: "clamp(40px, 7vw, 80px)" }}
@@ -281,7 +290,7 @@ export default function SkillsAndCerts() {
             <span className="text-blue-600 dark:text-blue-500">CREDENTIALS</span>
           </div>
 
-          {/* Tab switcher — underline style */}
+          {/* Tab switcher */}
           <div className="mt-10 flex items-end gap-0 border-b border-border">
             {TABS.map(tab => (
               <button
@@ -303,7 +312,6 @@ export default function SkillsAndCerts() {
                 >
                   {tab.count}
                 </span>
-                {/* Underline indicator */}
                 {activeTab === tab.id && (
                   <motion.div
                     layoutId="tab-underline"
@@ -316,7 +324,7 @@ export default function SkillsAndCerts() {
           </div>
         </motion.div>
 
-        {/* ── Tab content ──────────────────────────────────────── */}
+        {/* ── Tab content ────────────────────────────────────── */}
         <AnimatePresence mode="wait">
           {activeTab === "skills" ? (
             <motion.div
