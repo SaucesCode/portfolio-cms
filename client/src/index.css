@@ -106,3 +106,7 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+#resume-modal {
+  z-index: 99999;
+}

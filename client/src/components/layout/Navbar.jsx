@@ -74,7 +74,10 @@ export default function Navbar() {
   return (
     <>
       {/* ── Floating Navbar ──────────────────────────────────────── */}
-      <header className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-max px-4">
+      <header
+        className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-max px-4 transition-all duration-200 md:opacity-100 md:pointer-events-auto ${menuOpen ? "opacity-0 pointer-events-none" : "opacity-100 pointer-events-auto"}`}
+      >
+        {" "}
         <nav
           className={`
             relative flex items-center gap-0 rounded-2xl border px-1.5 py-1.5

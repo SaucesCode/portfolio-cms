@@ -1,17 +1,15 @@
-import { ArrowRight, Download, MapPin, Zap } from "lucide-react";
+import { ArrowRight, Download, Eye, MapPin, Zap } from "lucide-react";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
-import { motion, useInView } from "framer-motion";
-import { useRef, useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { useHero } from "../../hooks/useHero";
+import Typewriter from "typewriter-effect";
 
-/* ── animation helper ───────────────────────────────────────── */
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 22 },
   animate: { opacity: 1, y: 0 },
   transition: { duration: 0.6, delay, ease: [0.16, 1, 0.3, 1] },
 });
 
-/* ── ticker items — tech + tools ────────────────────────────── */
 const TICKER_ITEMS = [
   "React",
   "·",
@@ -52,14 +50,17 @@ export default function Hero() {
     );
   }
 
+  // Fallback taglines if none set in DB
+  const taglines = hero?.tagline?.length
+    ? hero.tagline
+    : ["Full-Stack Developer", "UI/UX Enthusiast", "Open to Remote Work"];
+
   return (
     <section
       id="hero"
       className="relative overflow-hidden bg-background"
       style={{ minHeight: "100svh" }}
     >
-      {/* ── Atmosphere ──────────────────────────────────────────── */}
-
       {/* Grain */}
       <div
         className="pointer-events-none absolute inset-0 z-0 opacity-[0.35]"
@@ -68,12 +69,10 @@ export default function Hero() {
           backgroundSize: "256px",
         }}
       />
-
-      {/* Blue glow blob top-right */}
+      {/* Blue glow top-right */}
       <div className="pointer-events-none absolute -top-32 right-0 z-0 h-[600px] w-[600px] rounded-full bg-blue-600/10 dark:bg-blue-500/12 blur-[120px]" />
       {/* Faint second blob bottom-left */}
       <div className="pointer-events-none absolute bottom-0 -left-24 z-0 h-[400px] w-[400px] rounded-full bg-blue-600/6 dark:bg-blue-500/8 blur-[100px]" />
-
       {/* Grid lines dark mode */}
       <div
         className="pointer-events-none absolute inset-0 z-0 hidden dark:block"
@@ -96,7 +95,6 @@ export default function Hero() {
             <span className="h-px w-6 bg-border inline-block" />
             Full-Stack Developer
           </div>
-
           {hero?.availableForWork && (
             <div className="flex items-center gap-1.5 rounded-full border border-green-500/20 bg-green-500/8 px-3 py-1 text-[11px] font-medium text-green-600 dark:text-green-400">
               <span className="relative flex h-1.5 w-1.5">
@@ -106,27 +104,24 @@ export default function Hero() {
               Open to work
             </div>
           )}
-
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 ml-auto">
             <MapPin size={11} />
             Philippines · Remote
           </div>
         </motion.div>
 
-        {/* ── Split headline + photo ───────────────────────────── */}
+        {/* Split headline + photo */}
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8 items-end">
-          {/* Headline block */}
+          {/* Left — headline */}
           <div>
-            {/* Line 1 — outlined stroke text (CSS trick) */}
             <motion.div {...fadeUp(0.06)}>
               <span
-                className="block font-black leading-[0.9] tracking-[-0.04em] text-transparent select-none"
+                className="block font-black leading-[0.9] tracking-[-0.04em] select-none"
                 style={{
                   fontSize: "clamp(52px, 9vw, 118px)",
-                  WebkitTextStroke: "1.5px currentColor",
+                  WebkitTextStroke:
+                    "1.5px color-mix(in srgb, var(--foreground) 22%, transparent)",
                   color: "transparent",
-                  WebkitTextStrokeColor:
-                    "color-mix(in srgb, var(--foreground) 22%, transparent)",
                 }}
                 aria-hidden
               >
@@ -134,7 +129,6 @@ export default function Hero() {
               </span>
             </motion.div>
 
-            {/* Line 2 — solid filled */}
             <motion.div {...fadeUp(0.12)}>
               <span
                 className="block font-black leading-[0.9] tracking-[-0.04em] text-foreground"
@@ -144,8 +138,7 @@ export default function Hero() {
               </span>
             </motion.div>
 
-            {/* Line 3 — blue accent + outlined mix */}
-            <motion.div {...fadeUp(0.18)} className="flex items-end gap-3 flex-wrap">
+            <motion.div {...fadeUp(0.18)}>
               <span
                 className="block font-black leading-[0.9] tracking-[-0.04em] text-blue-600 dark:text-blue-500"
                 style={{ fontSize: "clamp(52px, 9vw, 118px)" }}
@@ -166,7 +159,6 @@ export default function Hero() {
                 {hero?.bio ||
                   "I craft fast, accessible web applications end-to-end — from database schema to polished UI. Passionate about clean code and great UX."}
               </p>
-
               <div className="flex items-center gap-3 shrink-0">
                 <a
                   href="#projects"
@@ -178,7 +170,6 @@ export default function Hero() {
                     className="transition-transform duration-200 group-hover:translate-x-1"
                   />
                 </a>
-
                 {hero?.resumeUrl && (
                   <a
                     href={hero.resumeUrl}
@@ -186,7 +177,7 @@ export default function Hero() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 rounded-full border border-border bg-background hover:bg-muted px-5 py-2.5 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-all duration-200"
                   >
-                    <Download size={13} />
+                    <Eye size={13} />
                     Resume
                   </a>
                 )}
@@ -201,13 +192,16 @@ export default function Hero() {
               >
                 <FaGithub size={15} />
               </SocialBtn>
-              <SocialBtn href="https://linkedin.com" label="LinkedIn">
+              <SocialBtn
+                href="https://www.linkedin.com/in/james-patrick-de-mesa-93582424b/"
+                label="LinkedIn"
+              >
                 <FaLinkedin size={15} />
               </SocialBtn>
             </motion.div>
           </div>
 
-          {/* ── Photo column ──────────────────────────────────────── */}
+          {/* Right — photo column */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -215,13 +209,13 @@ export default function Hero() {
             className="hidden md:block relative self-end"
             style={{ width: "clamp(200px, 22vw, 300px)" }}
           >
-            {/* Floating label */}
+            {/* Floating name tag */}
             <div className="absolute -top-3 -left-3 z-10 flex items-center gap-1.5 rounded-full bg-background border border-border px-3 py-1.5 shadow-sm text-[11px] font-medium text-muted-foreground">
               <Zap size={10} className="text-blue-500" />
               {hero?.name?.split(" ")[0] || "James"}
             </div>
 
-            {/* Photo frame — no bottom border, bleeds to ticker */}
+            {/* Photo frame */}
             <div
               className="relative overflow-hidden rounded-t-[20px]"
               style={{ aspectRatio: "3/4" }}
@@ -231,12 +225,29 @@ export default function Hero() {
                 alt={hero?.name || "Profile"}
                 className="h-full w-full object-cover object-top"
               />
-              {/* Subtle vignette */}
               <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
               <div className="absolute inset-0 bg-gradient-to-r from-background/20 to-transparent" />
             </div>
 
-            {/* Mini stat strip below photo */}
+            {/* ── Typewriter strip — sits flush under photo ─────── */}
+            <div className="border-x border-border bg-card/80 backdrop-blur-sm px-4 py-3 flex items-center gap-2 min-h-[44px]">
+              <span className="text-[11px] font-medium text-muted-foreground/50 shrink-0">
+                I'm a
+              </span>
+              <span className="text-[12px] font-semibold truncate">
+                <Typewriter
+                  options={{
+                    strings: taglines,
+                    autoStart: true,
+                    loop: true,
+                    delay: 65,
+                    deleteSpeed: 35,
+                  }}
+                />
+              </span>
+            </div>
+
+            {/* Mini stat strip */}
             <div className="grid grid-cols-3 border border-t-0 border-border rounded-b-[20px] overflow-hidden">
               {[
                 { num: "4+", label: "Yrs" },
@@ -260,7 +271,7 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* ── Ticker tape — full width ─────────────────────────────── */}
+      {/* Ticker tape */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
