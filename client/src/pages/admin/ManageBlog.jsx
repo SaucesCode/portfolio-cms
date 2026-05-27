@@ -3,7 +3,19 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
-import { Plus, Pencil, Trash2, X, Check, Eye, EyeOff, Calendar, Tag } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Check,
+  Eye,
+  EyeOff,
+  Calendar,
+  Tag,
+  Layers,
+  Link,
+} from "lucide-react";
 import { toast } from "react-toastify";
 import api from "../../services/api";
 
@@ -16,8 +28,6 @@ const emptyForm = {
   tags: [],
 };
 
-// Converts title to URL slug
-// "My Blog Post" → "my-blog-post"
 function generateSlug(title) {
   return title
     .toLowerCase()
@@ -52,12 +62,10 @@ export default function ManageBlog() {
   const handleChange = e => {
     const { name, value } = e.target;
 
-    // Auto-generate slug when title changes
     if (name === "title") {
       setForm(prev => ({
         ...prev,
         title: value,
-        // Only auto-generate if slug hasn't been manually edited
         slug: generateSlug(value),
       }));
       return;
@@ -66,13 +74,13 @@ export default function ManageBlog() {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  // SimpleMDE calls onChange with the value directly, not an event
   const handleContentChange = value => {
     setForm(prev => ({ ...prev, content: value }));
   };
 
   const handleAddTag = () => {
     if (!newTag.trim()) return;
+    if (form.tags.includes(newTag.trim())) return;
     setForm(prev => ({
       ...prev,
       tags: [...prev.tags, newTag.trim()],
@@ -147,7 +155,6 @@ export default function ManageBlog() {
     }
   };
 
-  // Publish / unpublish toggle
   const handleTogglePublish = async post => {
     try {
       await api.patch(`/admin/blog/${post.id}/publish`);
@@ -160,185 +167,225 @@ export default function ManageBlog() {
   };
 
   const inputClass = `
-    w-full px-3 py-2 rounded-lg text-sm
-    bg-gray-800 border border-white/10
-    text-white placeholder:text-gray-600
-    focus:outline-none focus:border-blue-500/50
-    transition-all duration-200
+    w-full px-3 h-10 rounded-lg text-[11px] font-mono tracking-wide
+    bg-background border border-border
+    text-white placeholder:text-muted-foreground/40
+    focus:outline-none focus:border-foreground/20 focus:ring-1 focus:ring-foreground/10
+    transition-all duration-150
   `;
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-24 select-none">
+        <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full max-w-7xl mx-auto selection:bg-primary/10 selection:text-primary px-2">
       {/* Page header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6 select-none">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-1">Blog</h1>
-          <p className="text-gray-500 text-sm">
+          <h1 className="text-xs font-black uppercase tracking-[0.25em] text-foreground mb-1">
+            Content Node Registry
+          </h1>
+          <p className="text-[11px] font-mono text-muted-foreground">
             {posts.filter(p => p.published).length} published ·{" "}
-            {posts.filter(p => !p.published).length} drafts
+            {posts.filter(p => !p.published).length} drafts compiled inside pipeline
           </p>
         </div>
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium rounded-lg transition-all"
+            className="flex items-center gap-1.5 px-3.5 h-10 bg-primary text-primary-foreground text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors hover:bg-primary/90 cursor-pointer shadow-sm"
           >
-            <Plus size={16} />
-            New Post
+            <Plus size={12} />
+            Initialize Post
           </button>
         )}
       </div>
 
-      {/* Editor form */}
+      {/* Editor Form Panel */}
       <AnimatePresence>
         {showForm && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-gray-900 border border-white/5 rounded-2xl p-6 mb-6"
+            exit={{ opacity: 0, y: 8 }}
+            className="bg-card border border-border rounded-xl p-5 subpixel-antialiased shadow-sm mb-5"
           >
-            <h2 className="text-sm font-semibold text-white mb-4">
-              {editingId ? "Edit Post" : "New Post"}
+            <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4 border-b border-border/50 pb-2">
+              {editingId ? "Edit Document Configuration" : "New Document Configuration"}
             </h2>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              {/* Title */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-gray-400">Title</label>
-                <input
-                  name="title"
-                  value={form.title}
-                  onChange={handleChange}
-                  placeholder="My awesome blog post"
-                  className={inputClass}
-                />
-              </div>
-
-              {/* Slug — auto-generated but editable */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-gray-400">
-                  Slug
-                  <span className="text-gray-600 ml-1">
-                    (auto-generated, but you can edit it)
-                  </span>
-                </label>
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-800 border border-white/10">
-                  <span className="text-gray-600 text-sm">/blog/</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Title */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                    Post Document Title
+                  </label>
                   <input
-                    name="slug"
-                    value={form.slug}
+                    name="title"
+                    value={form.title}
                     onChange={handleChange}
-                    className="flex-1 bg-transparent text-sm text-white focus:outline-none"
+                    placeholder="My awesome blog post"
+                    className={inputClass}
                   />
+                </div>
+
+                {/* Slug */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                    URL Slug Route{" "}
+                    <span className="text-muted-foreground/30 font-normal tracking-normal lowercase">
+                      (auto-generated)
+                    </span>
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-[11px] font-mono text-muted-foreground/40 pointer-events-none select-none">
+                      /blog/
+                    </span>
+                    <input
+                      name="slug"
+                      value={form.slug}
+                      onChange={handleChange}
+                      className={`${inputClass} pl-[48px]`}
+                    />
+                  </div>
+                </div>
+
+                {/* Cover Image URL */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                    Cover Asset Resource URL
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-3 text-muted-foreground/40 pointer-events-none">
+                      <Link size={11} />
+                    </span>
+                    <input
+                      name="coverImageUrl"
+                      value={form.coverImageUrl}
+                      onChange={handleChange}
+                      placeholder="https://example.com/cover.jpg"
+                      className={`${inputClass} pl-8`}
+                    />
+                  </div>
+                </div>
+
+                {/* Tags Engine */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                    Meta Taxonomy Tags
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1 flex items-center">
+                      <span className="absolute left-3 text-muted-foreground/40 pointer-events-none">
+                        <Layers size={11} />
+                      </span>
+                      <input
+                        value={newTag}
+                        onChange={e => setNewTag(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddTag();
+                          }
+                        }}
+                        placeholder="Type tag and press Enter or click Add"
+                        className={`${inputClass} pl-8`}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddTag}
+                      className="flex items-center gap-1.5 px-3.5 h-10 bg-neutral-950 border border-neutral-800 text-white text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg hover:bg-neutral-900 transition-colors cursor-pointer"
+                    >
+                      <Tag size={11} />
+                      Inject
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Excerpt */}
+              {/* Tags Display Pool */}
+              {form.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 bg-neutral-950 border border-neutral-900 rounded-lg p-2.5">
+                  {form.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-md bg-neutral-900 text-neutral-400 border border-neutral-800"
+                    >
+                      #{tag}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(index)}
+                        className="text-muted-foreground/40 hover:text-red-400 transition-colors ml-0.5 cursor-pointer"
+                      >
+                        <X size={10} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Excerpt Summary */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-gray-400">Excerpt</label>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                  Brief Deck Abstract Excerpt
+                </label>
                 <textarea
                   name="excerpt"
                   value={form.excerpt}
                   onChange={handleChange}
-                  placeholder="Short summary shown in the blog card"
+                  placeholder="Short localized structural summary displayed inside primary tracking cards"
                   rows={2}
-                  className={`${inputClass} resize-none`}
+                  className="w-full p-3 h-16 rounded-lg text-[11px] font-mono tracking-wide bg-background border border-border text-white placeholder:text-muted-foreground/40 focus:outline-none focus:border-foreground/20 focus:ring-1 focus:ring-foreground/10 transition-all duration-150 resize-none"
                 />
               </div>
 
-              {/* Cover image */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-gray-400">Cover Image URL</label>
-                <input
-                  name="coverImageUrl"
-                  value={form.coverImageUrl}
-                  onChange={handleChange}
-                  placeholder="https://example.com/cover.jpg"
-                  className={inputClass}
-                />
-              </div>
-
-              {/* Tags */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-gray-400">Tags</label>
-                {form.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {form.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                      >
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveTag(index)}
-                          className="hover:text-red-400 transition-colors"
-                        >
-                          <X size={11} />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <input
-                    value={newTag}
-                    onChange={e => setNewTag(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleAddTag();
-                      }
-                    }}
-                    placeholder="e.g. React"
-                    className={inputClass}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddTag}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-all whitespace-nowrap"
-                  >
-                    <Tag size={14} />
-                    Add
-                  </button>
-                </div>
-              </div>
-
-              {/* Markdown editor */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-gray-400">Content (Markdown)</label>
-                <div className="rounded-lg overflow-hidden border border-white/10">
+              {/* Custom Embedded Markdown Editor */}
+              <div className="flex flex-col gap-1.5 unique-editor-dark">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
+                  Document Markdown Stream Stream
+                </label>
+                <div className="rounded-xl overflow-hidden border border-neutral-800 bg-neutral-950 p-1">
                   <SimpleMDE
                     value={form.content}
                     onChange={handleContentChange}
                     options={{
                       autofocus: false,
                       spellChecker: false,
-                      placeholder: "Write your post in markdown...",
+                      placeholder: "Write raw markdown stream...",
                       status: false,
                     }}
                   />
                 </div>
               </div>
 
-              {/* Form actions */}
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm rounded-lg transition-all"
-                >
-                  <Check size={15} />
-                  {isSubmitting ? "Saving..." : editingId ? "Update" : "Save Draft"}
-                </button>
+              {/* Panel Trigger Utilities */}
+              <div className="flex justify-end gap-2 pt-2 border-t border-border/50 mt-1 select-none">
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="flex items-center gap-2 px-4 py-2 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white text-sm rounded-lg transition-all"
+                  className="flex items-center gap-1.5 px-4 h-10 border border-border text-muted-foreground hover:text-foreground hover:bg-muted/30 text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
                 >
-                  <X size={15} />
-                  Cancel
+                  <X size={12} />
+                  Abort
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex items-center gap-1.5 px-4 h-10 bg-primary text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer shadow-sm"
+                >
+                  <Check size={12} />
+                  {isSubmitting
+                    ? "Syncing..."
+                    : editingId
+                      ? "Commit Updates"
+                      : "Write Draft Node"}
                 </button>
               </div>
             </form>
@@ -346,87 +393,98 @@ export default function ManageBlog() {
         )}
       </AnimatePresence>
 
-      {/* Posts list */}
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="w-6 h-6 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
-        </div>
-      ) : posts.length === 0 ? (
-        <div className="text-center py-16 text-gray-600">
-          No posts yet — write your first one!
+      {/* Expanded Wide Layout Posts View Map Container */}
+      {posts.length === 0 ? (
+        <div className="text-center py-16 border border-dashed border-border rounded-xl bg-card select-none">
+          <p className="text-[11px] font-mono text-muted-foreground/50 italic">
+            Zero blog nodes deployed within system streams.
+          </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 gap-3 w-full">
           {posts.map((post, index) => (
             <motion.div
               key={post.id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="bg-gray-900 border border-white/5 rounded-2xl p-5 hover:border-blue-500/10 transition-colors"
+              transition={{ delay: index * 0.02 }}
+              className="w-full bg-card border border-border rounded-xl p-4 subpixel-antialiased shadow-sm transition-all duration-150 hover:border-foreground/10"
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  {/* Title + status */}
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm font-semibold text-white">{post.title}</h3>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full border
-                      ${
-                        post.published
-                          ? "bg-green-500/10 text-green-400 border-green-500/20"
-                          : "bg-gray-800 text-gray-500 border-white/5"
-                      }`}
-                    >
-                      {post.published ? "Published" : "Draft"}
-                    </span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+                <div className="min-w-0 flex-1 flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+                  {/* Title and Active Deployment Status Metrics */}
+                  <div className="min-w-0 md:w-2/5">
+                    <div className="flex items-center gap-2.5 flex-wrap mb-1">
+                      <h3 className="text-xs font-bold text-white tracking-wide truncate max-w-[280px] sm:max-w-md">
+                        {post.title}
+                      </h3>
+                      <span
+                        className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-md border select-none
+                        ${
+                          post.published
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                            : "bg-neutral-900 text-neutral-500 border-neutral-800"
+                        }`}
+                      >
+                        {post.published ? "Live" : "Draft"}
+                      </span>
+                    </div>
+                    <p className="text-[10px] font-mono text-neutral-500 truncate">
+                      /blog/{post.slug}
+                    </p>
                   </div>
 
-                  {/* Slug */}
-                  <p className="text-xs text-gray-600 font-mono mb-2">/blog/{post.slug}</p>
-
-                  {/* Tags + date */}
-                  <div className="flex items-center gap-3 flex-wrap">
-                    {post.tags?.slice(0, 3).map(tag => (
-                      <span key={tag} className="text-xs text-gray-500">
+                  {/* Tags Taxonomies Block */}
+                  <div className="hidden sm:flex flex-wrap gap-1.5 flex-1 min-w-0 items-center">
+                    {post.tags?.slice(0, 4).map(tag => (
+                      <span
+                        key={tag}
+                        className="text-[9px] font-mono text-neutral-400 bg-neutral-900/60 border border-neutral-800 px-2 py-0.5 rounded"
+                      >
                         #{tag}
                       </span>
                     ))}
-                    {post.publishedAt && (
-                      <span className="flex items-center gap-1 text-xs text-gray-600">
-                        <Calendar size={11} />
-                        {formatDate(post.publishedAt)}
+                    {post.tags?.length > 4 && (
+                      <span className="text-[9px] font-mono text-neutral-600 px-1">
+                        +{post.tags.length - 4} more
                       </span>
                     )}
                   </div>
+
+                  {/* System Publish Timestamps */}
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-neutral-500 shrink-0 select-none">
+                    <Calendar size={11} className="text-neutral-600" />
+                    <span>
+                      {post.publishedAt ? formatDate(post.publishedAt) : "UNPUBLISHED"}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-1 flex-shrink-0">
-                  {/* Publish toggle */}
+                {/* Operations Manipulation Trigger Control Hub */}
+                <div className="flex items-center justify-end gap-1 shrink-0 select-none border-t sm:border-t-0 border-border/30 pt-2 sm:pt-0">
                   <button
                     onClick={() => handleTogglePublish(post)}
-                    className={`p-1.5 rounded-lg transition-all
+                    className={`p-1.5 rounded-lg border border-transparent transition-all cursor-pointer
                       ${
                         post.published
-                          ? "text-green-400 hover:text-gray-400 hover:bg-white/10"
-                          : "text-gray-500 hover:text-green-400 hover:bg-green-400/10"
+                          ? "text-emerald-400 hover:text-neutral-400 hover:bg-neutral-900 hover:border-neutral-800"
+                          : "text-neutral-500 hover:text-emerald-400 hover:bg-emerald-500/10 hover:border-transparent"
                       }`}
-                    title={post.published ? "Unpublish" : "Publish"}
+                    title={post.published ? "Retract Deployment" : "Deploy Pipeline Live"}
                   >
-                    {post.published ? <Eye size={14} /> : <EyeOff size={14} />}
+                    {post.published ? <Eye size={13} /> : <EyeOff size={13} />}
                   </button>
                   <button
                     onClick={() => handleEdit(post)}
-                    className="p-1.5 text-gray-500 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                    className="p-1.5 text-muted-foreground/50 hover:text-white hover:bg-neutral-800 border border-transparent hover:border-neutral-800 rounded-lg transition-all cursor-pointer"
                   >
-                    <Pencil size={14} />
+                    <Pencil size={13} />
                   </button>
                   <button
                     onClick={() => handleDelete(post.id)}
-                    className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+                    className="p-1.5 text-muted-foreground/50 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/10 rounded-lg transition-all cursor-pointer"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={13} />
                   </button>
                 </div>
               </div>
@@ -434,6 +492,29 @@ export default function ManageBlog() {
           ))}
         </div>
       )}
+
+      {/* Global CSS injection for dark Markdown editor styling resets */}
+      <style>{`
+        .unique-editor-dark .EasyMDEContainer .CodeMirror {
+          background: #0a0a0a !important;
+          color: #f5f5f5 !important;
+          border-color: #1f1f1f !important;
+          font-family: monospace !important;
+          font-size: 11px !important;
+        }
+        .unique-editor-dark .EasyMDEContainer .editor-toolbar {
+          background: #000000 !important;
+          border-color: #1f1f1f !important;
+          opacity: 0.8;
+        }
+        .unique-editor-dark .EasyMDEContainer .editor-toolbar button {
+          color: #ffffff !important;
+        }
+        .unique-editor-dark .EasyMDEContainer .editor-toolbar button.active,
+        .unique-editor-dark .EasyMDEContainer .editor-toolbar button:hover {
+          background: #1f1f1f !important;
+        }
+      `}</style>
     </div>
   );
 }

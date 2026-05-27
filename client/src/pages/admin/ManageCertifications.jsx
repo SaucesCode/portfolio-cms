@@ -1,18 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  X,
-  Check,
-  Award,
-  ExternalLink,
-  Calendar,
-  Layers,
-  Link45deg,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, X, Check, Award, ExternalLink } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "../../services/api";
 
@@ -122,31 +111,33 @@ export default function ManageCertifications() {
   };
 
   const inputClass = `
-    w-full px-3.5 py-2.5 rounded-xl text-sm
-    bg-gray-900/50 border border-white/10
-    text-white placeholder:text-gray-600
-    focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30
-    transition-all duration-200
+    w-full px-3.5 h-10 rounded-lg text-xs font-mono
+    bg-neutral-950 border border-border
+    text-white placeholder:text-neutral-600
+    focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/30
+    transition-all duration-150
   `;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="w-full max-w-7xl mx-auto selection:bg-primary/10 selection:text-primary px-2">
       {/* Page Header */}
-      <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/5">
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-border select-none">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Certifications</h1>
-          <p className="text-gray-400 text-xs mt-1">
-            {certifications.length}{" "}
-            {certifications.length === 1 ? "credential" : "credentials"} listed
+          <h1 className="text-xs font-black uppercase tracking-[0.25em] text-foreground">
+            Credentials & Achievements
+          </h1>
+          <p className="text-[11px] font-mono text-muted-foreground mt-1">
+            {certifications.length} {certifications.length === 1 ? "node" : "nodes"} verified
+            inside system telemetry
           </p>
         </div>
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-blue-600/10 transition-all duration-200 active:scale-[0.98]"
+            className="flex items-center gap-1.5 px-3.5 h-9 bg-primary hover:bg-primary/90 text-primary-foreground text-[10px] font-mono font-bold uppercase tracking-wider rounded-md transition-colors cursor-pointer shadow-sm active:scale-[0.98]"
           >
-            <Plus size={15} />
-            Add New
+            <Plus size={13} />
+            Append Record
           </button>
         )}
       </div>
@@ -155,27 +146,27 @@ export default function ManageCertifications() {
       <AnimatePresence>
         {showForm && (
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
+            initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="bg-gray-950 border border-white/5 rounded-2xl p-6 mb-8 shadow-xl"
+            exit={{ opacity: 0, y: -6 }}
+            className="bg-card border border-border rounded-xl p-5 mb-6 shadow-sm"
           >
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">
-                {editingId ? "Modify Certificate" : "New Certificate"}
+            <div className="flex items-center justify-between mb-4 select-none">
+              <h2 className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
+                {editingId ? "Modify Existing Parameters" : "Initialize New Record"}
               </h2>
               <button
                 onClick={handleCancel}
-                className="text-gray-500 hover:text-white transition-colors"
+                className="text-neutral-500 hover:text-white transition-colors cursor-pointer"
               >
-                <X size={16} />
+                <X size={15} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-gray-400">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="flex flex-col gap-1.5 md:col-span-4">
+                  <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400 select-none">
                     Certification Name
                   </label>
                   <input
@@ -187,8 +178,8 @@ export default function ManageCertifications() {
                   />
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-gray-400">
+                <div className="flex flex-col gap-1.5 md:col-span-3">
+                  <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400 select-none">
                     Issuing Organization
                   </label>
                   <input
@@ -200,8 +191,10 @@ export default function ManageCertifications() {
                   />
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-gray-400">Issue Date</label>
+                <div className="flex flex-col gap-1.5 md:col-span-3">
+                  <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400 select-none">
+                    Issue Timestamp
+                  </label>
                   <input
                     type="date"
                     name="issueDate"
@@ -211,9 +204,9 @@ export default function ManageCertifications() {
                   />
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium text-gray-400">
-                    Display Order Index
+                <div className="flex flex-col gap-1.5 md:col-span-2">
+                  <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400 select-none">
+                    Display Index
                   </label>
                   <input
                     type="number"
@@ -224,9 +217,9 @@ export default function ManageCertifications() {
                   />
                 </div>
 
-                <div className="flex flex-col gap-1.5 sm:col-span-2">
-                  <label className="text-xs font-medium text-gray-400">
-                    Verification URL (Optional)
+                <div className="flex flex-col gap-1.5 md:col-span-12">
+                  <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400 select-none">
+                    Verification Endpoint Link (Optional)
                   </label>
                   <input
                     name="credentialUrl"
@@ -238,21 +231,25 @@ export default function ManageCertifications() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/5">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/40 select-none">
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="px-4 py-2 text-gray-400 hover:text-white text-xs font-medium rounded-xl transition-all"
+                  className="px-3.5 h-9 text-neutral-400 hover:text-white text-[10px] font-mono font-bold uppercase tracking-wider rounded-md transition-colors cursor-pointer"
                 >
-                  Cancel
+                  Abort
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-all"
+                  className="flex items-center gap-1.5 px-3.5 h-9 bg-primary hover:bg-primary/90 disabled:opacity-50 text-primary-foreground text-[10px] font-mono font-bold uppercase tracking-wider rounded-md transition-colors cursor-pointer shadow-sm"
                 >
-                  <Check size={14} />
-                  {isSubmitting ? "Saving..." : editingId ? "Save Changes" : "Create Record"}
+                  <Check size={12} />
+                  {isSubmitting
+                    ? "Committing..."
+                    : editingId
+                      ? "Commit Changes"
+                      : "Push Record"}
                 </button>
               </div>
             </form>
@@ -262,48 +259,50 @@ export default function ManageCertifications() {
 
       {/* Content Stream */}
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-5 h-5 rounded-full border-2 border-blue-500/30 border-t-blue-500 animate-spin" />
+        <div className="flex justify-center py-24 select-none">
+          <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
         </div>
       ) : certifications.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-white/5 rounded-2xl bg-gray-950/20">
-          <Award size={24} className="mx-auto text-gray-600 mb-2 stroke-[1.5]" />
-          <p className="text-gray-500 text-xs">No certifications logged in the database.</p>
+        <div className="text-center py-16 border border-dashed border-border rounded-xl bg-card select-none">
+          <Award size={24} className="mx-auto text-muted-foreground/30 mb-2 stroke-[1.5]" />
+          <p className="text-[11px] font-mono text-muted-foreground/50 italic">
+            No certifications logged inside data streams.
+          </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-2.5">
+        <div className="grid grid-cols-1 gap-2 w-full">
           {certifications.map((cert, index) => (
             <motion.div
               key={cert.id}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.03 }}
-              className="group relative bg-gray-950/40 border border-white/5 rounded-xl p-4 flex items-center justify-between gap-4 hover:bg-gray-950/80 hover:border-white/10 transition-all duration-200"
+              className="group relative bg-card border border-border rounded-xl p-4 flex items-center justify-between gap-4 hover:bg-neutral-900/40 transition-all duration-150"
             >
               <div className="flex items-center gap-3.5 min-w-0">
                 {/* Accent Icon badge */}
-                <div className="w-9 h-9 rounded-xl bg-gray-900 border border-white/5 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover:text-blue-400 group-hover:border-blue-500/20 transition-colors">
-                  <Award size={16} className="stroke-[1.75]" />
+                <div className="w-9 h-9 rounded-lg bg-neutral-950 border border-border flex items-center justify-center shrink-0 text-neutral-400 group-hover:text-amber-400 group-hover:border-amber-500/20 transition-colors select-none">
+                  <Award size={15} className="stroke-[1.5]" />
                 </div>
 
                 <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-white tracking-wide truncate">
+                  <h3 className="text-xs font-bold text-white tracking-wide truncate">
                     {cert.name}
                   </h3>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-gray-400 mt-0.5">
-                    <span className="text-gray-300 font-medium">{cert.issuer}</span>
-                    <span className="text-gray-600">•</span>
-                    <span className="flex items-center gap-1 text-gray-500">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] font-mono text-neutral-500 mt-0.5">
+                    <span className="text-neutral-400 font-medium">{cert.issuer}</span>
+                    <span className="text-neutral-700 select-none">•</span>
+                    <span className="flex items-center gap-1 text-neutral-500">
                       {formatDate(cert.issueDate)}
                     </span>
                     {cert.credentialUrl && (
                       <>
-                        <span className="text-gray-600">•</span>
+                        <span className="text-neutral-700 select-none">•</span>
                         <a
                           href={cert.credentialUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-0.5 text-blue-400/80 hover:text-blue-400 font-medium"
+                          className="inline-flex items-center gap-0.5 text-amber-400 hover:text-amber-300 font-medium cursor-pointer"
                         >
                           Verify <ExternalLink size={10} className="ml-0.5" />
                         </a>
@@ -313,19 +312,19 @@ export default function ManageCertifications() {
                 </div>
               </div>
 
-              {/* Action standard interface */}
-              <div className="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+              {/* Action Interface Operations Block */}
+              <div className="flex items-center gap-1 opacity-20 group-hover:opacity-100 transition-opacity select-none">
                 <button
                   onClick={() => handleEdit(cert)}
-                  className="p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-all"
+                  className="p-2 text-neutral-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-border rounded-lg transition-all cursor-pointer"
                 >
-                  <Pencil size={13} />
+                  <Pencil size={12} />
                 </button>
                 <button
                   onClick={() => handleDelete(cert.id)}
-                  className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/5 rounded-lg transition-all"
+                  className="p-2 text-neutral-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/10 rounded-lg transition-all cursor-pointer"
                 >
-                  <Trash2 size={13} />
+                  <Trash2 size={12} />
                 </button>
               </div>
             </motion.div>
