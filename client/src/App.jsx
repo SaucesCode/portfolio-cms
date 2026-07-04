@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import Layout from "./components/layout/Layout";
 import AdminLayout from "./components/layout/AdminLayout";
@@ -24,11 +25,18 @@ import ManageBlog from "./pages/admin/ManageBlog";
 import Inbox from "./pages/admin/Inbox";
 import ManageTestimonials from "./pages/admin/ManageTestimonials";
 import SEO from "./components/SEO";
+import { useHero } from "./hooks/useHero";
 import ScrollToTop from "./components/ScrollToTop";
+import LoadingScreen from "./components/effects/LoadingScreen";
 
 function App() {
+  const { isLoading: heroLoading } = useHero();
+  const [appReady, setAppReady] = useState(false);
+
   return (
     <>
+      <LoadingScreen dataReady={!heroLoading} onComplete={() => setAppReady(true)} />
+
       <CustomCursor />
       <ScrollToTop />
       <Routes>
