@@ -19,10 +19,12 @@ model AdminUser {
   passwordHash String
   createdAt    DateTime @default(now())
 
-  createdProjects Project[] @relation("ProjectCreatedBy")
-  updatedProjects Project[] @relation("ProjectUpdatedBy")
-  createdSkills   Skill[]   @relation("SkillCreatedBy")
-  updatedSkills   Skill[]   @relation("SkillUpdatedBy")
+  createdProjects       Project[]       @relation("ProjectCreatedBy")
+  updatedProjects       Project[]       @relation("ProjectUpdatedBy")
+  createdSkills         Skill[]         @relation("SkillCreatedBy")
+  updatedSkills         Skill[]         @relation("SkillUpdatedBy")
+  createdCertifications Certification[] @relation("CertificationCreatedBy")
+  updatedCertifications Certification[] @relation("CertificationUpdatedBy")
 
   @@map("admin_users")
 }
@@ -117,6 +119,18 @@ model Certification {
   credentialUrl String?
   badgeImageUrl String?
   orderIndex    Int      @default(0)
+
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  archivedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
+
+  createdById Int?
+  updatedById Int?
+  createdBy   AdminUser? @relation("CertificationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   AdminUser? @relation("CertificationUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@map("certifications")
 }

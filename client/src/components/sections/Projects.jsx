@@ -6,7 +6,10 @@ import { useProjects } from "../../hooks/useProjects";
 
 function FilterTabs({ tags, active, onChange }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b pb-4" style={{ borderColor: "var(--rule)" }}>
+    <div
+      className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b pb-4"
+      style={{ borderColor: "var(--rule)" }}
+    >
       {tags.map(tag => {
         const isActive = active === tag;
         return (
@@ -37,7 +40,6 @@ function ProjectRow({ project, index, isHovered, isOpen, onHover, onToggle, onOp
     <div className="border-b" style={{ borderColor: "var(--rule)" }}>
       <motion.button
         onMouseEnter={() => onHover(project.id)}
-        onMouseLeave={() => onHover(null)}
         onClick={() => onToggle(project.id)}
         className="group w-full flex items-start gap-5 py-6 text-left"
       >
@@ -72,18 +74,31 @@ function ProjectRow({ project, index, isHovered, isOpen, onHover, onToggle, onOp
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
             {project.techStack?.slice(0, 4).map(tech => (
-              <span key={tech} className="mono-label text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+              <span
+                key={tech}
+                className="mono-label text-[11px]"
+                style={{ color: "var(--muted-foreground)" }}
+              >
                 {tech}
               </span>
             ))}
             {project.featured && (
-              <span className="flex items-center gap-1.5 text-[11px] font-mono" style={{ color: "var(--signal-warm)" }}>
-                <span className="h-1 w-1 rounded-full" style={{ background: "var(--signal-warm)" }} />
+              <span
+                className="flex items-center gap-1.5 text-[11px] font-mono"
+                style={{ color: "var(--signal-warm)" }}
+              >
+                <span
+                  className="h-1 w-1 rounded-full"
+                  style={{ background: "var(--signal-warm)" }}
+                />
                 featured
               </span>
             )}
             {project.stars != null && (
-              <span className="flex items-center gap-1 text-[11px] font-mono" style={{ color: "var(--muted-foreground)" }}>
+              <span
+                className="flex items-center gap-1 text-[11px] font-mono"
+                style={{ color: "var(--muted-foreground)" }}
+              >
                 <Star size={10} /> {project.stars}
               </span>
             )}
@@ -103,11 +118,21 @@ function ProjectRow({ project, index, isHovered, isOpen, onHover, onToggle, onOp
           >
             <div className="pb-6 pl-11">
               {project.imageUrl && (
-                <div className="mb-4 overflow-hidden border" style={{ borderColor: "var(--rule)", aspectRatio: "16/10" }}>
-                  <img src={project.imageUrl} alt={project.title} className="h-full w-full object-cover" />
+                <div
+                  className="mb-4 overflow-hidden border"
+                  style={{ borderColor: "var(--rule)", aspectRatio: "16/10" }}
+                >
+                  <img
+                    src={project.imageUrl}
+                    alt={project.title}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
               )}
-              <p className="text-[13.5px] leading-relaxed mb-4" style={{ color: "var(--muted-foreground)" }}>
+              <p
+                className="text-[13.5px] leading-relaxed mb-4"
+                style={{ color: "var(--muted-foreground)" }}
+              >
                 {project.description}
               </p>
               <button
@@ -148,10 +173,17 @@ function DetailPanel({ project, onClose }) {
           >
             <div className="p-8 md:p-10">
               <div className="flex items-center justify-between mb-10">
-                <span className="mono-label text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                <span
+                  className="mono-label text-[11px]"
+                  style={{ color: "var(--muted-foreground)" }}
+                >
                   {project.language || "project"}
                 </span>
-                <button onClick={onClose} aria-label="Close" style={{ color: "var(--muted-foreground)" }}>
+                <button
+                  onClick={onClose}
+                  aria-label="Close"
+                  style={{ color: "var(--muted-foreground)" }}
+                >
                   <X size={18} />
                 </button>
               </div>
@@ -162,38 +194,65 @@ function DetailPanel({ project, onClose }) {
                     className="absolute -top-2 -right-2 bottom-2 left-2 border pointer-events-none hidden sm:block"
                     style={{ borderColor: "var(--rule)" }}
                   />
-                  <div className="relative overflow-hidden border" style={{ borderColor: "var(--rule)", aspectRatio: "16/11" }}>
-                    <img src={project.imageUrl} alt={project.title} className="h-full w-full object-cover" />
+                  <div
+                    className="relative overflow-hidden border"
+                    style={{ borderColor: "var(--rule)", aspectRatio: "16/11" }}
+                  >
+                    <img
+                      src={project.imageUrl}
+                      alt={project.title}
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                 </div>
               )}
 
-              <h2 className="font-black tracking-[-0.02em] leading-[1.05] mb-5" style={{ fontSize: "clamp(28px,4vw,40px)" }}>
+              <h2
+                className="font-black tracking-[-0.02em] leading-[1.05] mb-5"
+                style={{ fontSize: "clamp(28px,4vw,40px)" }}
+              >
                 {project.title}
               </h2>
-              <p className="text-[14px] leading-[1.8] mb-8" style={{ color: "var(--muted-foreground)" }}>
+              <p
+                className="text-[14px] leading-[1.8] mb-8"
+                style={{ color: "var(--muted-foreground)" }}
+              >
                 {project.description}
               </p>
 
               <div className="mb-8">
-                <p className="mono-label text-[10px] uppercase tracking-wider mb-3" style={{ color: "var(--muted-foreground)" }}>
+                <p
+                  className="mono-label text-[10px] uppercase tracking-wider mb-3"
+                  style={{ color: "var(--muted-foreground)" }}
+                >
                   Stack
                 </p>
                 <div className="flex flex-wrap gap-x-4 gap-y-2">
                   {project.techStack?.map((t, i) => (
-                    <span key={i} className="text-[13px] font-medium" style={{ color: "var(--foreground)" }}>
+                    <span
+                      key={i}
+                      className="text-[13px] font-medium"
+                      style={{ color: "var(--foreground)" }}
+                    >
                       {t}
                     </span>
                   ))}
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 mb-8 mono-label text-[12px]" style={{ color: "var(--muted-foreground)" }}>
+              <div
+                className="flex items-center gap-3 mb-8 mono-label text-[12px]"
+                style={{ color: "var(--muted-foreground)" }}
+              >
                 {project.stars != null && (
-                  <span className="flex items-center gap-1"><Star size={12} /> {project.stars}</span>
+                  <span className="flex items-center gap-1">
+                    <Star size={12} /> {project.stars}
+                  </span>
                 )}
                 {project.forks != null && (
-                  <span className="flex items-center gap-1"><GitFork size={12} /> {project.forks}</span>
+                  <span className="flex items-center gap-1">
+                    <GitFork size={12} /> {project.forks}
+                  </span>
                 )}
               </div>
 
@@ -237,20 +296,33 @@ export default function Projects() {
   const [detailProject, setDetailProject] = useState(null);
 
   const allTags = ["All", ...new Set(projects.flatMap(p => p.techStack || []))];
-  const filtered = activeFilter === "All" ? projects : projects.filter(p => p.techStack?.includes(activeFilter));
+  const filtered =
+    activeFilter === "All"
+      ? projects
+      : projects.filter(p => p.techStack?.includes(activeFilter));
   const hovered = filtered.find(p => p.id === hoveredId) || filtered[0];
 
   if (isLoading) return <section className="py-24" />;
 
   return (
-    <section id="projects" className="border-t" style={{ background: "var(--background)", borderColor: "var(--rule)" }}>
+    <section
+      id="projects"
+      className="border-t"
+      style={{ background: "var(--background)", borderColor: "var(--rule)" }}
+    >
       <div className="mx-auto max-w-[1280px] px-6 md:px-14 py-20 md:py-28">
         {/* Header */}
         <div className="mb-14">
-          <p className="mono-label text-[11px] mb-4" style={{ color: "var(--muted-foreground)" }}>
+          <p
+            className="mono-label text-[11px] mb-4"
+            style={{ color: "var(--muted-foreground)" }}
+          >
             002 — selected work
           </p>
-          <h2 className="font-black tracking-[-0.03em] leading-[0.95]" style={{ fontSize: "clamp(36px, 5.5vw, 68px)" }}>
+          <h2
+            className="font-black tracking-[-0.03em] leading-[0.95]"
+            style={{ fontSize: "clamp(36px, 5.5vw, 68px)" }}
+          >
             Things I've <span className="accent-word">shipped</span>.
           </h2>
         </div>
@@ -301,13 +373,20 @@ export default function Projects() {
                       onClick={() => setDetailProject(hovered)}
                     >
                       {hovered.imageUrl ? (
-                        <img src={hovered.imageUrl} alt={hovered.title} className="h-full w-full object-cover" />
+                        <img
+                          src={hovered.imageUrl}
+                          alt={hovered.title}
+                          className="h-full w-full object-cover"
+                        />
                       ) : (
                         <div
                           className="flex h-full w-full items-center justify-center"
                           style={{ background: "var(--muted)" }}
                         >
-                          <span className="mono-label text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                          <span
+                            className="mono-label text-[11px]"
+                            style={{ color: "var(--muted-foreground)" }}
+                          >
                             {hovered.language || "no preview"}
                           </span>
                         </div>
@@ -317,11 +396,17 @@ export default function Projects() {
                   <div className="mt-3 flex items-baseline justify-between">
                     <span
                       className="text-[11px] italic"
-                      style={{ fontFamily: "var(--font-display)", color: "var(--muted-foreground)" }}
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        color: "var(--muted-foreground)",
+                      }}
                     >
                       {hovered.title}
                     </span>
-                    <span className="mono-label text-[10px]" style={{ color: "var(--muted-foreground)" }}>
+                    <span
+                      className="mono-label text-[10px]"
+                      style={{ color: "var(--muted-foreground)" }}
+                    >
                       view case →
                     </span>
                   </div>
@@ -331,7 +416,10 @@ export default function Projects() {
           </div>
         </div>
 
-        <p className="mt-14 text-right mono-label text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+        <p
+          className="mt-14 text-right mono-label text-[11px]"
+          style={{ color: "var(--muted-foreground)" }}
+        >
           {filtered.length} of {projects.length} projects
         </p>
       </div>
