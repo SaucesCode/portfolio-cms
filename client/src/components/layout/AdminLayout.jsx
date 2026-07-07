@@ -1,34 +1,42 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard,
-  FolderOpen,
+  LayoutGrid,
+  FolderKanban,
   Wrench,
   Briefcase,
   Award,
   MessageSquare,
-  BarChart2,
-  FileText,
-  Inbox,
+  MessagesSquare,
+  Settings,
   LogOut,
   Menu,
   X,
-  User,
+  ArrowUpRight,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "react-toastify";
 
-const NAV_ITEMS = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "Hero", href: "/admin/hero", icon: User },
-  { path: "/admin/projects", label: "Projects", href: "/admin/projects", icon: FolderOpen },
-  { label: "Skills", href: "/admin/skills", icon: Wrench },
-  { label: "Experience", href: "/admin/experience", icon: Briefcase },
-  { label: "Certifications", href: "/admin/certifications", icon: Award },
-  { label: "Testimonials", href: "/admin/testimonials", icon: MessageSquare },
-  { label: "Stats", href: "/admin/stats", icon: BarChart2 },
-  { label: "Blog", href: "/admin/blog", icon: FileText },
-  { label: "Inbox", href: "/admin/inbox", icon: Inbox },
+const NAV_GROUPS = [
+  {
+    label: "Overview",
+    items: [{ label: "Dashboard", href: "/admin", icon: LayoutGrid, end: true }],
+  },
+  {
+    label: "Content",
+    items: [
+      { label: "Projects", href: "/admin/projects", icon: FolderKanban },
+      { label: "Blog", href: "/admin/blog", icon: Briefcase },
+      { label: "Skills", href: "/admin/skills", icon: Wrench },
+      { label: "Experience", href: "/admin/experience", icon: Briefcase },
+      { label: "Certifications", href: "/admin/certifications", icon: Award },
+      { label: "Testimonials", href: "/admin/testimonials", icon: MessagesSquare },
+    ],
+  },
+  {
+    label: "Inbox",
+    items: [{ label: "Messages", href: "/admin/inbox", icon: MessageSquare }],
+  },
 ];
 
 export default function AdminLayout({ children }) {
@@ -38,146 +46,130 @@ export default function AdminLayout({ children }) {
 
   const handleLogout = async () => {
     await logout();
-    toast.success("Logged out");
+    toast.success("Signed out");
     navigate("/admin/login");
   };
 
   const navLinkClass = ({ isActive }) => `
-    flex items-center gap-3 px-3 h-9 rounded-lg text-[11px] font-medium uppercase tracking-[0.08em] transition-all duration-150 relative group
-    ${
-      isActive
-        ? "bg-foreground/[0.03] text-foreground font-bold border border-border/80 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.02)]"
-        : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
-    }
+    relative flex items-center gap-2.5 pl-3.5 pr-2.5 h-8 rounded-md text-[13px] font-medium transition-colors
+    ${isActive ? "" : "hover:bg-[var(--muted)]"}
   `;
 
   const Sidebar = () => (
-    <aside className="flex flex-col h-full bg-card border-r border-border w-56 p-4 select-none subpixel-antialiased">
-      {/* Logo */}
-      <div className="flex items-center justify-between mb-6 px-1">
-        <div className="flex items-center gap-3 overflow-hidden min-w-0">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground font-mono font-black text-xs tracking-wider shadow-sm">
-            VCS
+    <aside
+      className="flex flex-col h-full w-60 shrink-0"
+      style={{ background: "var(--card)", borderRight: "1px solid var(--rule)" }}
+    >
+      {/* Wordmark */}
+      <div className="flex items-center justify-between px-4 h-14 shrink-0" style={{ borderBottom: "1px solid var(--rule)" }}>
+        <div className="flex items-center gap-2">
+          <div
+            className="h-6 w-6 rounded-md flex items-center justify-center text-[10px] font-bold"
+            style={{ background: "var(--signal)", color: "var(--background)" }}
+          >
+            W
           </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-foreground block truncate">
-              Core Console
-            </span>
-            <span className="text-[9px] font-mono text-muted-foreground/80 block truncate">
-              v2026.4.1
-            </span>
-          </div>
+          <span className="text-[13px] font-semibold tracking-tight">Workbench</span>
         </div>
-        <button
-          onClick={() => setSidebarOpen(false)}
-          className="md:hidden p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-        >
-          <X size={14} />
+        <button onClick={() => setSidebarOpen(false)} className="md:hidden" style={{ color: "var(--muted-foreground)" }}>
+          <X size={15} />
         </button>
       </div>
 
-      {/* Nav links */}
-      <nav className="flex flex-col gap-0.5 flex-1 overflow-y-auto scrollbar-none pr-0.5">
-        {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
-          <NavLink
-            key={href}
-            to={href}
-            end={href === "/admin"} // 'end' prevents /admin matching all sub-routes
-            className={navLinkClass}
-            onClick={() => setSidebarOpen(false)}
-          >
-            {({ isActive }) => (
-              <>
-                {isActive && (
-                  <div className="absolute left-[-16px] top-2 bottom-2 w-[3px] rounded-r-full bg-primary" />
-                )}
-                <Icon
-                  size={14}
-                  strokeWidth={isActive ? 2.2 : 1.8}
-                  className={
-                    isActive
-                      ? "text-primary"
-                      : "text-muted-foreground/60 group-hover:text-foreground transition-colors"
-                  }
-                />
-                <span className="truncate">{label}</span>
-              </>
-            )}
-          </NavLink>
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 flex flex-col gap-5">
+        {NAV_GROUPS.map(group => (
+          <div key={group.label}>
+            <p
+              className="px-3.5 mb-1.5 text-[10px] font-semibold uppercase tracking-wider"
+              style={{ color: "var(--muted-foreground)", opacity: 0.7 }}
+            >
+              {group.label}
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {group.items.map(({ label, href, icon: Icon, end }) => (
+                <NavLink key={href} to={href} end={end} className={navLinkClass} onClick={() => setSidebarOpen(false)}>
+                  {({ isActive }) => (
+                    <>
+                      <span
+                        className="absolute left-0 top-1 bottom-1 w-[2.5px] rounded-full transition-opacity"
+                        style={{ background: "var(--signal)", opacity: isActive ? 1 : 0 }}
+                      />
+                      <Icon size={15} style={{ color: isActive ? "var(--signal)" : "var(--muted-foreground)" }} />
+                      <span style={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}>{label}</span>
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
-      {/* User + logout */}
-      <div className="border-t border-border pt-4 mt-4 shrink-0 bg-card">
-        <div className="flex items-center gap-3 px-1.5 mb-3 overflow-hidden">
-          <div className="h-7 w-7 rounded-lg bg-muted border border-border flex items-center justify-center shrink-0">
-            <User size={12} className="text-muted-foreground" />
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-[11px] font-bold tracking-wide truncate text-foreground block">
-              {user?.email?.split("@")[0] || "Operator"}
-            </span>
-            <span className="text-[9px] font-mono text-muted-foreground truncate uppercase block">
-              {user?.email || "root@vcs.node"}
-            </span>
-          </div>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-3 h-9 rounded-lg text-[11px] font-mono font-bold uppercase tracking-wider text-muted-foreground hover:text-destructive hover:bg-destructive/5 border border-transparent hover:border-destructive/10 transition-all duration-150 w-full cursor-pointer"
+      {/* Bottom — live site link + account */}
+      <div className="px-3 pb-3 pt-2 shrink-0" style={{ borderTop: "1px solid var(--rule)" }}>
+        <a
+          href="/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between px-3.5 h-8 rounded-md text-[12.5px] font-medium transition-colors hover:bg-[var(--muted)]"
+          style={{ color: "var(--muted-foreground)" }}
         >
-          <LogOut size={13} />
-          Logout
-        </button>
+          View live site
+          <ArrowUpRight size={13} />
+        </a>
+
+        <div className="flex items-center justify-between px-3.5 mt-1 h-11">
+          <div className="min-w-0">
+            <p className="text-[12.5px] font-medium truncate">{user?.email?.split("@")[0] || "Admin"}</p>
+            <p className="text-[11px] truncate" style={{ color: "var(--muted-foreground)" }}>
+              {user?.email || ""}
+            </p>
+          </div>
+          <button
+            onClick={handleLogout}
+            aria-label="Sign out"
+            className="p-1.5 rounded-md transition-colors hover:bg-[var(--muted)]"
+            style={{ color: "var(--muted-foreground)" }}
+          >
+            <LogOut size={14} />
+          </button>
+        </div>
       </div>
     </aside>
   );
 
   return (
-    <div className="min-h-screen bg-background text-foreground antialiased flex selection:bg-primary/10 selection:text-primary">
-      {/* Desktop sidebar — locked viewport containment layout */}
-      <div className="hidden md:flex flex-shrink-0 sticky top-0 h-screen z-40">
+    <div
+      className="admin-shell min-h-screen flex"
+      style={{ background: "var(--background)", color: "var(--foreground)", "--radius": "10px" }}
+    >
+      <div className="hidden md:flex shrink-0 sticky top-0 h-screen">
         <Sidebar />
       </div>
 
-      {/* Mobile sidebar — slides in */}
       {sidebarOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity duration-200"
-            onClick={() => setSidebarOpen(false)}
-          />
-          <div className="relative z-10 flex-shrink-0 h-full animate-in slide-in-from-left duration-200">
+          <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.35)" }} onClick={() => setSidebarOpen(false)} />
+          <div className="relative z-10 h-full">
             <Sidebar />
           </div>
         </div>
       )}
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile topbar */}
-        <div className="md:hidden flex items-center justify-between px-4 h-16 border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-30">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 -ml-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-            >
-              <Menu size={18} />
-            </button>
-            <span className="text-xs font-black uppercase tracking-[0.2em] text-foreground">
-              Core Console
-            </span>
-          </div>
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-mono font-black text-xs tracking-wider">
-            V
-          </div>
+        <div
+          className="md:hidden flex items-center justify-between px-4 h-14 sticky top-0 z-30"
+          style={{ background: "var(--card)", borderBottom: "1px solid var(--rule)" }}
+        >
+          <button onClick={() => setSidebarOpen(true)} style={{ color: "var(--muted-foreground)" }}>
+            <Menu size={18} />
+          </button>
+          <span className="text-[13px] font-semibold">Workbench</span>
+          <div className="w-[18px]" />
         </div>
 
-        {/* Page content */}
-        <main className="flex-1 p-6 md:p-10 overflow-x-hidden overflow-y-auto">
-          {children}
-        </main>
+        <main className="flex-1 px-6 py-8 md:px-10 md:py-10 max-w-[1100px] w-full mx-auto">{children}</main>
       </div>
     </div>
   );

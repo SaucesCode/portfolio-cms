@@ -23,6 +23,7 @@ import ManageCertifications from "./pages/admin/ManageCertifications";
 import CustomCursor from "./components/effects/CustomCursor";
 import ManageHero from "./pages/admin/ManageHero";
 import ManageProjects from "./pages/admin/ManageProjects";
+import ProjectEditor from "./pages/admin/ProjectEditor";
 import ManageBlog from "./pages/admin/ManageBlog";
 import Inbox from "./pages/admin/Inbox";
 import ManageTestimonials from "./pages/admin/ManageTestimonials";
@@ -64,6 +65,8 @@ function AdminRoutes() {
           <Route path="testimonials" element={<ManageTestimonials />} />
           <Route path="hero" element={<ManageHero />} />
           <Route path="projects" element={<ManageProjects />} />
+          <Route path="projects/new" element={<ProjectEditor />} />
+          <Route path="projects/:id/edit" element={<ProjectEditor />} />
           <Route path="blog" element={<ManageBlog />} />
           <Route path="inbox" element={<Inbox />} />
         </Routes>
