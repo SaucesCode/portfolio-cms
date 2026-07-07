@@ -4,220 +4,215 @@ import { Award, ExternalLink, Calendar } from "lucide-react";
 import { useSkills } from "../../hooks/useSkills";
 import { useCertifications } from "../../hooks/useCertifications";
 
-/* ── constants ───────────────────────────────────────────────── */
 const CATEGORY_ORDER = ["Frontend", "Backend", "Tools", "Other"];
 
-const CATEGORY_META = {
-  Frontend: {
-    accent: "text-blue-500",
-    bar: "bg-blue-500",
-    border: "hover:border-blue-500/30",
-    labelColor: "#3B82F6",
-  },
-  Backend: {
-    accent: "text-violet-500",
-    bar: "bg-violet-500",
-    border: "hover:border-violet-500/30",
-    labelColor: "#8B5CF6",
-  },
-  Tools: {
-    accent: "text-emerald-500",
-    bar: "bg-emerald-500",
-    border: "hover:border-emerald-500/30",
-    labelColor: "#10B981",
-  },
-  Other: {
-    accent: "text-amber-500",
-    bar: "bg-amber-500",
-    border: "hover:border-amber-500/30",
-    labelColor: "#F59E0B",
-  },
-};
+// Proficiency drives literal type weight — a variable font lets us hit these exactly
+const WEIGHT_MAP = { 1: 400, 2: 500, 3: 650, 4: 780, 5: 900 };
+const SIZE_MAP = { 1: 20, 2: 26, 3: 33, 4: 40, 5: 48 };
 
-/* ── helpers ─────────────────────────────────────────────────── */
-function formatDate(d) {
-  if (!d) return "";
-  return new Date(d).toLocaleDateString("en-US", {
-    month: "short",
-    year: "numeric",
-  });
-}
-
-/* ── SkillTag ────────────────────────────────────────────────── */
-function SkillTag({ skill, meta }) {
-  const pct = (skill.proficiencyLevel / 5) * 100;
+function SkillWord({ skill, index }) {
+  const [hovered, setHovered] = useState(false);
+  const weight = WEIGHT_MAP[skill.proficiencyLevel] || 500;
+  const size = SIZE_MAP[skill.proficiencyLevel] || 26;
 
   return (
-    <motion.div
+    <motion.button
       variants={{
-        hidden: { opacity: 0, y: 8 },
-        show: { opacity: 1, y: 0 },
+        hidden: { opacity: 0, y: 10 },
+        show: {
+          opacity: 1,
+          y: 0,
+          transition: { delay: index * 0.025, duration: 0.4, ease: [0.16, 1, 0.3, 1] },
+        },
       }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className={`group relative overflow-hidden rounded-xl border border-border bg-card px-3.5 py-3 cursor-default transition-colors duration-150 ${meta.border}`}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={() => setHovered(false)}
+      aria-label={`${skill.name} — proficiency ${skill.proficiencyLevel} of 5`}
+      className="group inline-flex items-baseline gap-2 mr-5 mb-1 rounded-sm focus-visible:outline-none focus-visible:ring-2"
+      style={{ "--tw-ring-color": "var(--signal)" }}
     >
-      {/* Skill name */}
-      <span className="block text-[13px] font-semibold text-foreground mb-2.5 truncate">
+      <span
+        className="tracking-[-0.02em] transition-colors duration-200"
+        style={{
+          fontSize: `${size}px`,
+          fontWeight: weight,
+          lineHeight: 1.15,
+          color: hovered ? "var(--signal)" : "var(--foreground)",
+        }}
+      >
         {skill.name}
       </span>
-
-      {/* Proficiency bar */}
-      <div className="h-[2px] w-full overflow-hidden rounded-full bg-border">
-        <motion.div
-          className={`h-full rounded-full ${meta.bar}`}
-          initial={{ width: 0 }}
-          whileInView={{ width: `${pct}%` }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
-        />
-      </div>
-
-      {/* Level on hover */}
       <span
-        className={`absolute top-2.5 right-2.5 text-[9px] font-black opacity-0 group-hover:opacity-100 transition-opacity duration-150 ${meta.accent}`}
+        className="mono-label text-[10px] transition-all duration-200"
+        style={{
+          color: "var(--muted-foreground)",
+          opacity: hovered ? 1 : 0,
+          transform: hovered ? "translateX(0)" : "translateX(-3px)",
+        }}
       >
         {skill.proficiencyLevel}/5
       </span>
-    </motion.div>
+    </motion.button>
   );
 }
 
-/* ── SkillsTab ───────────────────────────────────────────────── */
 function SkillsTab({ skills }) {
   const grouped = CATEGORY_ORDER.reduce((acc, cat) => {
     const items = skills.filter(s => s.category === cat);
     if (items.length) acc[cat] = items;
     return acc;
   }, {});
+  const categories = Object.keys(grouped);
+  const [active, setActive] = useState(categories[0]);
 
   return (
-    <div className="flex flex-col gap-10">
-      {Object.entries(grouped).map(([category, items], idx) => {
-        const meta = CATEGORY_META[category] ?? CATEGORY_META.Other;
-
-        return (
-          <motion.div
-            key={category}
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{
-              delay: idx * 0.06,
-              duration: 0.5,
-              ease: [0.16, 1, 0.3, 1],
-            }}
-          >
-            {/* Category header row */}
-            <div className="flex items-center gap-3 mb-4">
-              <span
-                className="text-[11px] font-black uppercase tracking-[0.14em]"
-                style={{ color: meta.labelColor }}
-              >
-                {category}
-              </span>
-              <span className="text-[11px] text-muted-foreground/40 font-medium">
-                {items.length} {items.length === 1 ? "skill" : "skills"}
-              </span>
-              <div className="flex-1 h-px bg-border" />
-            </div>
-
-            {/* Skills grid */}
-            <motion.div
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2"
-              variants={{
-                hidden: {},
-                show: { transition: { staggerChildren: 0.04 } },
-              }}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true, margin: "-30px" }}
+    <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-10 md:gap-16">
+      {/* Left rail — category index, desktop */}
+      <div className="hidden md:flex flex-col gap-1 sticky top-24 self-start">
+        {categories.map(cat => {
+          const isActive = active === cat;
+          return (
+            <button
+              key={cat}
+              onClick={() => setActive(cat)}
+              className="group flex items-center justify-between py-2.5 text-left border-b transition-colors"
+              style={{ borderColor: "var(--rule)" }}
             >
-              {items.map(skill => (
-                <SkillTag key={skill.id} skill={skill} meta={meta} />
-              ))}
-            </motion.div>
+              <span
+                className="text-[13px] font-medium transition-colors"
+                style={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
+              >
+                {cat}
+              </span>
+              <span
+                className="mono-label text-[10px]"
+                style={{ color: isActive ? "var(--signal)" : "var(--muted-foreground)" }}
+              >
+                {String(grouped[cat].length).padStart(2, "0")}
+              </span>
+            </button>
+          );
+        })}
+        <p
+          className="mono-label text-[10px] leading-relaxed mt-6 max-w-[160px]"
+          style={{ color: "var(--muted-foreground)" }}
+        >
+          Larger, bolder type — more time spent with it.
+        </p>
+      </div>
+
+      {/* Mobile — horizontal tabs */}
+      <div
+        className="flex md:hidden gap-6 overflow-x-auto pb-3 border-b no-scrollbar"
+        style={{ borderColor: "var(--rule)" }}
+      >
+        {categories.map(cat => {
+          const isActive = active === cat;
+          return (
+            <button
+              key={cat}
+              onClick={() => setActive(cat)}
+              className="relative pb-2 shrink-0 text-[12px] font-mono uppercase tracking-wider"
+              style={{ color: isActive ? "var(--foreground)" : "var(--muted-foreground)" }}
+            >
+              {cat}
+              {isActive && (
+                <motion.span
+                  layoutId="skills-mobile-underline"
+                  className="absolute left-0 right-0 -bottom-[13px] h-[2px]"
+                  style={{ background: "var(--signal)" }}
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Right — the typographic word field */}
+      <div className="min-h-[280px]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={active}
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.02 } } }}
+            initial="hidden"
+            animate="show"
+            exit={{ opacity: 0, transition: { duration: 0.15 } }}
+            className="flex flex-wrap items-baseline pt-1"
+          >
+            {grouped[active]?.map((skill, i) => (
+              <SkillWord key={skill.id} skill={skill} index={i} />
+            ))}
           </motion.div>
-        );
-      })}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
 
-/* ── CertsTab ────────────────────────────────────────────────── */
+/* ── CertsTab — lightly reskinned to the new tokens for now ───── */
+function formatDate(d) {
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
 function CertsTab({ certifications }) {
   return (
-    <motion.div
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
-      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
-      initial="hidden"
-      animate="show"
-    >
-      {certifications.map(cert => (
+    <div className="flex flex-col">
+      {certifications.map((cert, i) => (
         <motion.a
           key={cert.id}
           href={cert.credentialUrl || undefined}
           target="_blank"
           rel="noopener noreferrer"
-          variants={{
-            hidden: { opacity: 0, y: 16 },
-            show: { opacity: 1, y: 0 },
-          }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className={`group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-colors duration-200 hover:border-blue-500/30 ${
-            cert.credentialUrl ? "cursor-pointer" : "cursor-default"
-          }`}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.05 }}
+          className="group flex items-center justify-between gap-6 py-5 border-b transition-colors"
+          style={{ borderColor: "var(--rule)" }}
         >
-          {/* Color strip */}
-          <div className="h-[3px] w-full bg-gradient-to-r from-blue-600 to-violet-600 opacity-25 group-hover:opacity-100 transition-opacity duration-300" />
-
-          <div className="flex flex-col gap-4 p-5 flex-1">
-            {/* Icon + View link */}
-            <div className="flex items-start justify-between">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/8 border border-blue-500/15">
-                <Award size={16} className="text-blue-500" strokeWidth={1.8} />
-              </div>
-              {cert.credentialUrl && (
-                <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground/25 group-hover:text-blue-500 transition-colors duration-200">
-                  View
-                  <ExternalLink size={9} />
-                </span>
-              )}
-            </div>
-
-            {/* Name + issuer */}
-            <div className="flex-1">
-              <h3 className="text-[13.5px] font-bold leading-snug tracking-tight text-foreground mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
+          <div className="flex items-center gap-4 min-w-0">
+            <Award
+              size={16}
+              style={{ color: "var(--muted-foreground)" }}
+              className="shrink-0"
+            />
+            <div className="min-w-0">
+              <h3
+                className="text-[14px] font-bold truncate transition-colors"
+                style={{ color: "var(--foreground)" }}
+              >
                 {cert.name}
               </h3>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/45">
-                {cert.issuer}
+              <p
+                className="mono-label text-[11px] mt-0.5"
+                style={{ color: "var(--muted-foreground)" }}
+              >
+                {cert.issuer} · {formatDate(cert.issueDate)}
               </p>
             </div>
-
-            {/* Date footer */}
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/35 pt-3 border-t border-border">
-              <Calendar size={10} />
-              Issued {formatDate(cert.issueDate)}
-            </div>
           </div>
+          {cert.credentialUrl && (
+            <ExternalLink
+              size={14}
+              className="shrink-0 transition-colors"
+              style={{ color: "var(--muted-foreground)" }}
+            />
+          )}
         </motion.a>
       ))}
-    </motion.div>
+    </div>
   );
 }
 
-/* ── Main export ─────────────────────────────────────────────── */
+/* ── Main ────────────────────────────────────────────────────── */
 export default function SkillsAndCerts() {
   const { data: skills = [], isLoading: loadingSkills } = useSkills();
   const { data: certifications = [], isLoading: loadingCerts } = useCertifications();
   const [activeTab, setActiveTab] = useState("skills");
 
-  if (loadingSkills || loadingCerts)
-    return (
-      <section className="flex items-center justify-center py-24 bg-background">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-      </section>
-    );
+  if (loadingSkills || loadingCerts) return <section className="py-24" />;
 
   const TABS = [
     { id: "skills", label: "Skills", count: skills.length },
@@ -227,122 +222,70 @@ export default function SkillsAndCerts() {
   return (
     <section
       id="skills"
-      className="relative overflow-hidden bg-background border-y border-border"
+      className="border-t"
+      style={{ background: "var(--background)", borderColor: "var(--rule)" }}
     >
-      {/* Grain texture */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-25"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")`,
-          backgroundSize: "256px",
-        }}
-      />
-
-      {/* Grid lines — dark only */}
-      <div
-        className="pointer-events-none absolute inset-0 hidden dark:block"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right,rgba(255,255,255,0.03) 1px,transparent 1px)," +
-            "linear-gradient(to bottom,rgba(255,255,255,0.03) 1px,transparent 1px)",
-          backgroundSize: "48px 48px",
-          maskImage: "radial-gradient(ellipse 80% 80% at 50% 40%,#000 50%,transparent 100%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse 80% 80% at 50% 40%,#000 50%,transparent 100%)",
-        }}
-      />
-
-      {/* Blue glow */}
-      <div className="pointer-events-none absolute top-0 right-0 z-0 h-[400px] w-[400px] rounded-full bg-blue-600/6 dark:bg-blue-500/8 blur-[100px]" />
-
-      <div className="relative z-10 mx-auto max-w-[1280px] px-6 md:px-14 py-20">
-        {/* ── Section header ─────────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-14"
-        >
-          {/* Eyebrow */}
-          <div className="mb-4 flex items-center gap-3">
-            <span className="h-px w-6 bg-border inline-block" />
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50">
-              Expertise
-            </span>
-          </div>
-
-          {/* Headline */}
-          <div
-            className="flex flex-wrap items-end gap-x-4 gap-y-0 leading-[0.9] tracking-[-0.04em] font-black"
-            style={{ fontSize: "clamp(40px, 7vw, 80px)" }}
+      <div className="mx-auto max-w-[1280px] px-6 md:px-14 py-20 md:py-28">
+        <div className="mb-14">
+          <p
+            className="mono-label text-[11px] mb-4"
+            style={{ color: "var(--muted-foreground)" }}
           >
-            <span
-              className="text-transparent select-none"
-              style={{
-                WebkitTextStroke:
-                  "1.5px color-mix(in srgb, var(--foreground) 22%, transparent)",
-              }}
+            003 — capabilities
+          </p>
+          <div className="flex flex-wrap items-end justify-between gap-6">
+            <h2
+              className="font-black tracking-[-0.03em] leading-[0.95]"
+              style={{ fontSize: "clamp(36px, 5.5vw, 68px)" }}
             >
-              SKILLS
-            </span>
-            <span className="text-foreground">&</span>
-            <span className="text-blue-600 dark:text-blue-500">CREDENTIALS</span>
+              What I <span className="accent-word">reach</span> for.
+            </h2>
+            <div className="flex items-center gap-6 pb-2">
+              {TABS.map(tab => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className="relative pb-2 text-[12px] font-mono uppercase tracking-wider"
+                    style={{
+                      color: isActive ? "var(--foreground)" : "var(--muted-foreground)",
+                    }}
+                  >
+                    {tab.label}{" "}
+                    <span style={{ color: "var(--muted-foreground)" }}>({tab.count})</span>
+                    {isActive && (
+                      <motion.span
+                        layoutId="skills-tab-underline"
+                        className="absolute left-0 right-0 -bottom-[1px] h-[2px]"
+                        style={{ background: "var(--signal)" }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+        </div>
 
-          {/* Tab switcher */}
-          <div className="mt-10 flex items-end gap-0 border-b border-border">
-            {TABS.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`relative flex items-center gap-2 pb-3 pr-8 text-[11.5px] font-bold uppercase tracking-[0.12em] transition-colors duration-150 ${
-                  activeTab === tab.id
-                    ? "text-foreground"
-                    : "text-muted-foreground/50 hover:text-foreground"
-                }`}
-              >
-                {tab.label}
-                <span
-                  className={`rounded-md px-1.5 py-0.5 text-[9px] font-black ${
-                    activeTab === tab.id
-                      ? "bg-blue-600/10 text-blue-600 dark:text-blue-500"
-                      : "bg-muted text-muted-foreground/40"
-                  }`}
-                >
-                  {tab.count}
-                </span>
-                {activeTab === tab.id && (
-                  <motion.div
-                    layoutId="tab-underline"
-                    className="absolute bottom-0 left-0 right-8 h-[2px] rounded-full bg-blue-600"
-                    transition={{ type: "spring", stiffness: 420, damping: 36 }}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* ── Tab content ────────────────────────────────────── */}
         <AnimatePresence mode="wait">
           {activeTab === "skills" ? (
             <motion.div
               key="skills"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
             >
               <SkillsTab skills={skills} />
             </motion.div>
           ) : (
             <motion.div
               key="certs"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
             >
               <CertsTab certifications={certifications} />
             </motion.div>

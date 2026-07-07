@@ -7,6 +7,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { ThemeProvider } from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
+import { TransitionProvider } from "./context/TransitionContext";
 import App from "./App";
 import "./index.css";
 
@@ -28,8 +29,10 @@ createRoot(document.getElementById("root")).render(
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
             <AuthProvider>
-              <App />
-              <ToastContainer position="bottom-right" theme="colored" />
+              <TransitionProvider>
+                <App />
+                <ToastContainer position="bottom-right" theme="colored" />
+              </TransitionProvider>
             </AuthProvider>
           </ThemeProvider>
         </QueryClientProvider>

@@ -1,122 +1,108 @@
 import { useEffect, useRef, useState } from "react";
 
+const CONTEXTS = {
+  default: { size: 8, label: null },
+  link: { size: 8, label: null, ring: true },
+  button: { size: 8, label: null, ring: true },
+  text: { size: 2, label: null, tall: true }, // thin caret over readable text
+  image: { size: 44, label: "View" },
+  drag: { size: 44, label: "Drag" },
+};
+
+function detectContext(el) {
+  if (!el) return "default";
+  if (el.closest("[data-cursor='drag']")) return "drag";
+  if (el.closest("img, [data-cursor='image']")) return "image";
+  if (el.closest("a, button, [role='button'], input, textarea, select")) return "link";
+  if (el.closest("p, h1, h2, h3, span, li")) return "text";
+  return "default";
+}
+
 export default function CustomCursor() {
-  const cursorRef = useRef(null);
-  const trailRef = useRef(null);
-  const posRef = useRef({ x: -100, y: -100 });
-  const trailPos = useRef({ x: -100, y: -100 });
-  const rafRef = useRef(null);
+  const dotRef = useRef(null);
+  const pos = useRef({ x: -100, y: -100 });
+  const eased = useRef({ x: -100, y: -100 });
+  const raf = useRef(null);
+  const [context, setContext] = useState("default");
   const [clicked, setClicked] = useState(false);
-  const [hovering, setHovering] = useState(false);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const cursor = cursorRef.current;
-    const trail = trailRef.current;
+    // Skip entirely on touch devices — a custom cursor there is pure noise
+    const isTouch = window.matchMedia("(pointer: coarse)").matches;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (isTouch) return;
 
-    // Smooth trail via lerp in rAF loop
+    document.documentElement.style.cursor = "none";
+    const dot = dotRef.current;
+
     const lerp = (a, b, t) => a + (b - a) * t;
-
     const loop = () => {
-      trailPos.current.x = lerp(trailPos.current.x, posRef.current.x, 0.1);
-      trailPos.current.y = lerp(trailPos.current.y, posRef.current.y, 0.1);
-
-      cursor.style.transform = `translate(${posRef.current.x}px, ${posRef.current.y}px)`;
-      trail.style.transform = `translate(${trailPos.current.x}px, ${trailPos.current.y}px)`;
-
-      rafRef.current = requestAnimationFrame(loop);
+      const t = reduceMotion ? 1 : 0.22;
+      eased.current.x = lerp(eased.current.x, pos.current.x, t);
+      eased.current.y = lerp(eased.current.y, pos.current.y, t);
+      if (dot) dot.style.transform = `translate(${eased.current.x}px, ${eased.current.y}px)`;
+      raf.current = requestAnimationFrame(loop);
     };
-    rafRef.current = requestAnimationFrame(loop);
+    raf.current = requestAnimationFrame(loop);
 
     const onMove = e => {
-      posRef.current = { x: e.clientX, y: e.clientY };
+      pos.current = { x: e.clientX, y: e.clientY };
+      if (!visible) setVisible(true);
+      setContext(detectContext(e.target));
     };
-
-    const onOver = e => {
-      if (e.target.closest('a, button, [role="button"], input, textarea, select, label')) {
-        setHovering(true);
-      }
-    };
-
-    const onOut = e => {
-      if (e.target.closest('a, button, [role="button"], input, textarea, select, label')) {
-        setHovering(false);
-      }
-    };
-
+    const onLeave = () => setVisible(false);
     const onDown = () => setClicked(true);
     const onUp = () => setClicked(false);
 
     window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseover", onOver);
-    window.addEventListener("mouseout", onOut);
+    document.addEventListener("mouseleave", onLeave);
     window.addEventListener("mousedown", onDown);
     window.addEventListener("mouseup", onUp);
 
-    // Hide default cursor globally
-    document.documentElement.style.cursor = "none";
-
     return () => {
-      cancelAnimationFrame(rafRef.current);
+      cancelAnimationFrame(raf.current);
+      document.documentElement.style.cursor = "";
       window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseover", onOver);
-      window.removeEventListener("mouseout", onOut);
+      document.removeEventListener("mouseleave", onLeave);
       window.removeEventListener("mousedown", onDown);
       window.removeEventListener("mouseup", onUp);
-      document.documentElement.style.cursor = "";
     };
-  }, []);
+  }, [visible]);
+
+  if (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches)
+    return null;
+
+  const cfg = CONTEXTS[context] || CONTEXTS.default;
+  const scale = clicked ? 0.82 : 1;
 
   return (
-    <>
-      {/* ── Main cursor dot ─────────────────────────────────── */}
+    <div
+      ref={dotRef}
+      className="pointer-events-none fixed top-0 left-0 z-[9999] -translate-x-1/2 -translate-y-1/2 transition-opacity duration-200"
+      style={{ opacity: visible ? 1 : 0, willChange: "transform" }}
+      aria-hidden="true"
+    >
       <div
-        ref={cursorRef}
-        className="pointer-events-none fixed top-0 left-0 z-[9999] -translate-x-1/2 -translate-y-1/2"
-        style={{ willChange: "transform" }}
+        className="flex items-center justify-center rounded-full transition-[width,height,background,border] duration-200 ease-out"
+        style={{
+          width: cfg.tall ? 2 : cfg.size,
+          height: cfg.tall ? 20 : cfg.size,
+          borderRadius: cfg.tall ? "2px" : "9999px",
+          background: cfg.label ? "var(--background)" : "var(--signal)",
+          border: cfg.ring || cfg.label ? `1px solid var(--signal)` : "none",
+          transform: `scale(${scale})`,
+        }}
       >
-        {/* Outer ring — expands on hover */}
-        <span
-          className="absolute rounded-full border border-blue-500/60 transition-all duration-200"
-          style={{
-            inset: hovering ? "-14px" : "-8px",
-            opacity: hovering ? 0.6 : 0,
-          }}
-        />
-
-        {/* Core dot — morphs on hover/click */}
-        <span
-          className="block rounded-full bg-blue-500 transition-all duration-150"
-          style={{
-            width: clicked ? 6 : hovering ? 10 : 8,
-            height: clicked ? 6 : hovering ? 10 : 8,
-            opacity: 1,
-            transform: `translate(-50%, -50%) scale(${clicked ? 0.7 : 1})`,
-            boxShadow: hovering
-              ? "0 0 12px 4px rgba(59,130,246,0.45)"
-              : "0 0 6px 2px rgba(59,130,246,0.35)",
-          }}
-        />
+        {cfg.label && (
+          <span
+            className="mono-label text-[9px] uppercase tracking-wider"
+            style={{ color: "var(--signal)" }}
+          >
+            {cfg.label}
+          </span>
+        )}
       </div>
-
-      {/* ── Trailing blob ───────────────────────────────────── */}
-      <div
-        ref={trailRef}
-        className="pointer-events-none fixed top-0 left-0 z-[9998] -translate-x-1/2 -translate-y-1/2"
-        style={{ willChange: "transform" }}
-      >
-        <span
-          className="block rounded-full transition-all duration-200"
-          style={{
-            width: hovering ? 44 : 28,
-            height: hovering ? 44 : 28,
-            transform: `translate(-50%, -50%)`,
-            background: hovering
-              ? "radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%)"
-              : "radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)",
-            border: `1px solid rgba(59,130,246,${hovering ? 0.25 : 0.15})`,
-          }}
-        />
-      </div>
-    </>
+    </div>
   );
 }

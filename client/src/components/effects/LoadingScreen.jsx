@@ -1,189 +1,228 @@
-// client/src/components/effects/LoadingScreen.jsx
+import { useRef, useEffect, useState, useLayoutEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useHero } from "../../hooks/useHero";
 
-import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { createPortal } from "react-dom";
+const SCRAMBLE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ·—/";
+const EASE = [0.22, 1, 0.36, 1];
 
-import BootLogs from "./BootLogs";
-import ProgressBar from "./ProgressBar";
-import EncryptedText from "./EncryptedText";
-import BlinkingCursor from "./BlinkingCursor";
+function randomChar() {
+  return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
+}
 
-export default function LoadingScreen({ dataReady, minDuration = 4000, onComplete }) {
-  const [progress, setProgress] = useState(0);
+export default function LoadingScreen({ dataReady, minDuration = 2700, onComplete }) {
+  const { data: hero } = useHero();
+  const name = (hero?.name || "James Patrick De Mesa").toUpperCase();
+  const chars = name.split("");
+
   const [exiting, setExiting] = useState(false);
-  const [decrypt, setDecrypt] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [settled, setSettled] = useState(false); // true once every char has locked in
+  const [fontSize, setFontSize] = useState(64);
 
+  const charRefs = useRef([]);
+  const lockedRef = useRef([]);
+  const lastTickRef = useRef([]);
+  const timingRef = useRef([]); // { start, lockAt } per character, computed once
+  const measureRef = useRef(null);
+  const wrapperRef = useRef(null);
   const startRef = useRef(null);
+  const reducedMotion = useRef(false);
 
+  charRefs.current = [];
+
+  // --- Per-character reveal timing, computed once on mount ---
+  if (timingRef.current.length !== chars.length) {
+    let cursor = 0;
+    timingRef.current = chars.map(ch => {
+      if (ch === " ") return { start: 0, lockAt: 0, isSpace: true };
+      const start = 150 + cursor * 38 + Math.random() * 55;
+      const lockAt = start + 380 + Math.random() * 320;
+      cursor += 1;
+      return { start, lockAt, isSpace: false };
+    });
+  }
+  const allLockedAt = Math.max(...timingRef.current.map(t => t.lockAt));
+
+  // --- Auto-fit font size so the name never wraps, at any length or viewport ---
+  useLayoutEffect(() => {
+    const REFERENCE_SIZE = 120;
+
+    const measure = () => {
+      if (!measureRef.current) return;
+      const naturalWidth = measureRef.current.scrollWidth;
+      const available = window.innerWidth * 0.86;
+      const scale = Math.min(1, available / naturalWidth);
+      const next = Math.max(16, Math.min(96, REFERENCE_SIZE * scale));
+      setFontSize(next);
+    };
+
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [name]);
+
+  // --- Scramble loop ---
   useEffect(() => {
-    if (startRef.current === null) {
-      startRef.current = performance.now();
+    reducedMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    lockedRef.current = chars.map(() => false);
+    lastTickRef.current = chars.map(() => 0);
+
+    if (reducedMotion.current) {
+      charRefs.current.forEach((el, i) => {
+        if (!el) return;
+        el.textContent = chars[i];
+        el.style.color = "var(--foreground)";
+      });
+      setSettled(true);
+      return;
     }
 
     let raf;
+    startRef.current = performance.now();
 
     const tick = now => {
       const elapsed = now - startRef.current;
-      const timeDone = elapsed >= minDuration;
+      let allDone = true;
 
-      if (timeDone && dataReady) {
-        setProgress(100);
+      timingRef.current.forEach((timing, i) => {
+        const el = charRefs.current[i];
+        if (!el || timing.isSpace) return;
 
-        if (!decrypt) {
-          setDecrypt(true);
+        if (lockedRef.current[i]) return;
 
-          // ~19 letters × 90ms reveal speed ≈ 1.7s, plus a beat to let it land
-          setTimeout(() => {
-            setReady(true);
-
-            setTimeout(() => {
-              setExiting(true);
-            }, 1500);
-          }, 2200);
+        if (elapsed >= timing.lockAt) {
+          el.textContent = chars[i];
+          el.style.transition = "none";
+          el.style.color = "var(--signal)";
+          // Force a reflow so the next transition actually animates
+          void el.offsetWidth;
+          el.style.transition = "color 480ms cubic-bezier(0.22, 1, 0.36, 1)";
+          el.style.color = "var(--foreground)";
+          lockedRef.current[i] = true;
+        } else {
+          allDone = false;
+          if (elapsed >= timing.start && now - lastTickRef.current[i] > 55) {
+            el.textContent = randomChar();
+            lastTickRef.current[i] = now;
+          } else if (elapsed < timing.start) {
+            allDone = false;
+          }
         }
+      });
 
-        return;
+      if (!allDone) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        setSettled(true);
       }
-
-      const cap = 95;
-      const pct = Math.min(cap, (elapsed / minDuration) * cap);
-
-      setProgress(pct);
-      raf = requestAnimationFrame(tick);
     };
 
     raf = requestAnimationFrame(tick);
-
     return () => cancelAnimationFrame(raf);
-  }, [dataReady, minDuration, decrypt]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name]);
+
+  // --- Exit timing: real minimum duration + everything must be settled ---
+  useEffect(() => {
+    let raf;
+    const start = performance.now();
+    const check = () => {
+      const elapsed = performance.now() - start;
+      const revealFinished = reducedMotion.current || elapsed >= allLockedAt + 400;
+      if (elapsed >= minDuration && dataReady && revealFinished) {
+        setExiting(true);
+      } else {
+        raf = requestAnimationFrame(check);
+      }
+    };
+    raf = requestAnimationFrame(check);
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataReady, minDuration]);
 
   useEffect(() => {
     document.body.style.overflow = exiting ? "" : "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => (document.body.style.overflow = "");
   }, [exiting]);
 
-  return createPortal(
+  return (
     <AnimatePresence onExitComplete={onComplete}>
       {!exiting && (
         <motion.div
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 1 }}
-          exit={{
-            opacity: 0,
-            scale: 1.02,
-            filter: "blur(8px)",
-          }}
-          transition={{
-            duration: 0.7,
-            ease: [0.16, 1, 0.3, 1],
-          }}
-          className="fixed inset-0 z-[2147483647] overflow-hidden bg-slate-950"
+          key="loading-screen"
+          exit={{ y: "-100%" }}
+          transition={{ duration: 0.85, ease: EASE }}
+          className="fixed inset-0 z-[999999] flex flex-col items-center justify-center overflow-hidden"
+          style={{ background: "var(--background)" }}
         >
-          {/* Grain */}
-          <div
-            className="absolute inset-0 opacity-[0.15]"
+          {/* Hidden measuring node — natural width at a fixed reference size, mono, nowrap */}
+          <span
+            ref={measureRef}
+            aria-hidden="true"
+            className="absolute opacity-0 pointer-events-none whitespace-nowrap"
             style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")`,
-              backgroundSize: "220px",
+              fontFamily: "var(--font-mono)",
+              fontWeight: 800,
+              fontSize: "120px",
+              letterSpacing: "-0.01em",
+              top: -9999,
+              left: -9999,
             }}
-          />
+          >
+            {name}
+          </span>
 
-          {/* Glow — subdued, off to the sides so the center stays calm */}
-          <div className="absolute -right-40 -top-40 h-[600px] w-[600px] rounded-full bg-blue-600/10 blur-[180px]" />
-          <div className="absolute -left-52 bottom-0 h-[420px] w-[420px] rounded-full bg-cyan-500/[0.06] blur-[150px]" />
-
-          {/* Grid */}
-          <div
-            className="absolute inset-0 opacity-[0.03]"
-            style={{
-              backgroundImage:
-                "linear-gradient(to right,#ffffff 1px,transparent 1px),linear-gradient(to bottom,#ffffff 1px,transparent 1px)",
-              backgroundSize: "40px 40px",
-            }}
-          />
-
-          <div className="relative z-10 flex h-full flex-col items-center justify-center px-8">
-            {/* Eyebrow — replaces the old logo mark */}
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="mb-4 flex items-center gap-3"
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.45, ease: EASE }}
+            className="flex flex-col items-center px-6"
+          >
+            <div
+              ref={wrapperRef}
+              className="whitespace-nowrap"
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontWeight: 800,
+                fontSize: `${fontSize}px`,
+                letterSpacing: "-0.01em",
+                lineHeight: 1,
+              }}
             >
-              <span className="h-px w-6 bg-slate-700" />
-              <span className="font-mono text-[10px] uppercase tracking-[0.4em] text-slate-500">
-                Portfolio
-              </span>
-              <span className="h-px w-6 bg-slate-700" />
-            </motion.div>
-
-            {/* Heading */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.15 }}
-              className="mb-12 font-mono text-xs uppercase tracking-[0.35em] text-slate-400"
-            >
-              Preparing your experience
-            </motion.p>
-
-            {/* Logs */}
-            <BootLogs progress={progress} />
-
-            <div className="mt-10 w-full max-w-xl">
-              <ProgressBar progress={progress} />
+              {chars.map((ch, i) => (
+                <span
+                  key={i}
+                  ref={el => (charRefs.current[i] = el)}
+                  style={{
+                    display: "inline-block",
+                    color: "var(--rule)",
+                    whiteSpace: "pre",
+                  }}
+                >
+                  {ch === " " ? "\u00A0" : ""}
+                </span>
+              ))}
             </div>
 
-            {/* Identity */}
-            <AnimatePresence>
-              {decrypt && (
-                <motion.div
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="mt-14 text-center"
-                >
-                  <EncryptedText
-                    text="James Patrick De Mesa"
-                    className="block font-mono text-2xl font-bold tracking-widest md:text-3xl"
-                    encryptedClassName="text-blue-500/70"
-                    revealedClassName="text-white"
-                    revealSpeed={90}
-                  />
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={settled ? { opacity: 1, y: 0 } : {}}
+              transition={{ duration: 0.5, ease: EASE, delay: 0.1 }}
+              className="mono-label text-[11px] uppercase tracking-[0.25em] mt-6"
+              style={{ color: "var(--muted-foreground)" }}
+            >
+              Full-Stack Developer
+            </motion.p>
 
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
-                    className="mt-3 font-mono text-[11px] uppercase tracking-[0.35em] text-slate-500"
-                  >
-                    Full-Stack Developer
-                  </motion.p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* READY */}
-            <AnimatePresence>
-              {ready && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="mt-10 flex items-center gap-1 font-mono text-xs uppercase tracking-[0.3em] text-blue-400/90"
-                >
-                  Ready
-                  <BlinkingCursor className="text-blue-400/90" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+            <motion.div
+              initial={{ scaleX: 0 }}
+              animate={settled ? { scaleX: 1 } : {}}
+              transition={{ duration: 0.55, ease: EASE, delay: 0.22 }}
+              className="h-px w-16 mt-8 origin-center"
+              style={{ background: "var(--signal)" }}
+            />
+          </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>,
-    document.body,
+    </AnimatePresence>
   );
 }

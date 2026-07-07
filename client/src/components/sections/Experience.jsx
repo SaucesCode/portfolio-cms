@@ -1,12 +1,12 @@
-import { useRef } from "react";
-import { motion } from "framer-motion";
-import { Calendar, ArrowLeft, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus } from "lucide-react";
 import { useExperiences } from "../../hooks/useExperiences";
 
-function formatDate(dateStr) {
+function formatDate(dateStr, opts = {}) {
   if (!dateStr) return "";
   return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
+    month: opts.short ? "short" : "long",
     year: "numeric",
   });
 }
@@ -16,210 +16,227 @@ function duration(start, end, isCurrent) {
   const to = isCurrent ? new Date() : new Date(end);
   const months =
     (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
-  if (months < 12) return `${months}mo`;
+  if (months < 12) return `${months} mo`;
   const yrs = Math.floor(months / 12);
   const mo = months % 12;
-  return mo ? `${yrs}y ${mo}mo` : `${yrs}y`;
+  return mo ? `${yrs} yr ${mo} mo` : `${yrs} yr`;
 }
 
+/* ── The lead story — current role ──────────────────────────── */
+function NowBlock({ exp }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+      className="pb-14 mb-14 border-b"
+      style={{ borderColor: "var(--rule)" }}
+    >
+      <div className="flex items-center gap-2.5 mb-6">
+        <span className="relative flex h-1.5 w-1.5">
+          <span
+            className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
+            style={{ background: "var(--signal-warm)" }}
+          />
+          <span
+            className="relative inline-flex h-1.5 w-1.5 rounded-full"
+            style={{ background: "var(--signal-warm)" }}
+          />
+        </span>
+        <span
+          className="mono-label text-[11px] uppercase tracking-wider"
+          style={{ color: "var(--signal-warm)" }}
+        >
+          Currently — {duration(exp.startDate, exp.endDate, true)} and counting
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr] gap-8 md:gap-16 items-start">
+        <div>
+          <h3
+            className="font-black tracking-[-0.03em] leading-[0.98]"
+            style={{ fontSize: "clamp(34px, 5vw, 58px)" }}
+          >
+            {exp.role}
+          </h3>
+          <p
+            className="mt-3 text-[18px] md:text-[20px]"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontStyle: "italic",
+              fontWeight: 400,
+              color: "var(--signal)",
+            }}
+          >
+            at {exp.company}
+          </p>
+        </div>
+
+        <div className="md:pt-2">
+          <p
+            className="text-[14px] leading-[1.85]"
+            style={{ color: "var(--muted-foreground)" }}
+          >
+            {exp.description}
+          </p>
+          <p
+            className="mono-label text-[11px] mt-5"
+            style={{ color: "var(--muted-foreground)" }}
+          >
+            since {formatDate(exp.startDate)}
+          </p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ── One line in the record ─────────────────────────────────── */
+function RecordRow({ exp, index, total, isOpen, onToggle }) {
+  // Recede visually the further back in history — recency expressed as scale, not a dot on a line
+  const recede = index / Math.max(total - 1, 1); // 0 = most recent past role, 1 = oldest
+  const titleSize = 22 - recede * 5; // 22px → ~17px
+  const fade = 1 - recede * 0.35;
+
+  return (
+    <div className="border-b" style={{ borderColor: "var(--rule)" }}>
+      <motion.button
+        initial={{ opacity: 0, y: 10 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ delay: index * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        onClick={onToggle}
+        className="group w-full flex items-baseline justify-between gap-6 py-5 text-left"
+        style={{ opacity: fade }}
+      >
+        <div className="flex items-baseline gap-4 min-w-0">
+          <span
+            className="mono-label text-[10px] shrink-0"
+            style={{ color: "var(--muted-foreground)" }}
+          >
+            {String(total - index).padStart(2, "0")}
+          </span>
+          <div className="min-w-0">
+            <span
+              className="font-bold tracking-[-0.01em] transition-colors"
+              style={{
+                fontSize: `${titleSize}px`,
+                color: isOpen ? "var(--signal)" : "var(--foreground)",
+              }}
+            >
+              {exp.role}
+            </span>
+            <span className="ml-2 text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+              — {exp.company}
+            </span>
+          </div>
+        </div>
+        <span
+          className="mono-label text-[11px] shrink-0 whitespace-nowrap"
+          style={{ color: "var(--muted-foreground)" }}
+        >
+          {formatDate(exp.startDate, { short: true })} –{" "}
+          {formatDate(exp.endDate, { short: true })}
+        </span>
+      </motion.button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <p
+              className="pb-6 pl-8 max-w-[560px] text-[13px] leading-[1.8]"
+              style={{ color: "var(--muted-foreground)" }}
+            >
+              {exp.description}
+              <span
+                className="mono-label block mt-2 text-[11px]"
+                style={{ color: "var(--muted-foreground)" }}
+              >
+                {duration(exp.startDate, exp.endDate, false)}
+              </span>
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ── Main ────────────────────────────────────────────────────── */
 export default function Experience() {
   const { data: experiences = [], isLoading } = useExperiences();
-  const scrollRef = useRef(null);
+  const [openId, setOpenId] = useState(null);
 
-  const scroll = dir => {
-    scrollRef.current?.scrollBy({ left: dir * 380, behavior: "smooth" });
-  };
+  if (isLoading) return <section id="experience" className="py-24" />;
 
-  if (isLoading)
-    return (
-      <section className="flex items-center justify-center py-20 bg-background">
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-      </section>
-    );
+  const current = experiences.find(e => e.isCurrent);
+  const past = experiences.filter(e => !e.isCurrent);
 
   return (
     <section
       id="experience"
-      className="relative overflow-hidden border-y border-border bg-background py-20"
+      className="border-t"
+      style={{ background: "var(--background)", borderColor: "var(--rule)" }}
     >
-      {/* Grain */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-25"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")`,
-          backgroundSize: "256px",
-        }}
-      />
-
-      {/* Grid lines */}
-      <div
-        className="pointer-events-none absolute inset-0 hidden dark:block"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right,rgba(255,255,255,0.03) 1px,transparent 1px)," +
-            "linear-gradient(to bottom,rgba(255,255,255,0.03) 1px,transparent 1px)",
-          backgroundSize: "48px 48px",
-          maskImage: "radial-gradient(ellipse 80% 80% at 50% 50%,#000 40%,transparent 100%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse 80% 80% at 50% 50%,#000 40%,transparent 100%)",
-        }}
-      />
-
-      <div className="relative z-10">
-        {/* Header + nav buttons — aligned to global max-width */}
-        <div className="mx-auto mb-12 flex max-w-[1280px] items-end justify-between px-6 md:px-14">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      <div className="mx-auto max-w-[1280px] px-6 md:px-14 py-20 md:py-28">
+        <div className="mb-14">
+          <p
+            className="mono-label text-[11px] mb-4"
+            style={{ color: "var(--muted-foreground)" }}
           >
-            {/* Eyebrow */}
-            <div className="mb-4 flex items-center gap-3">
-              <span className="h-px w-6 bg-border inline-block" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50">
-                Where I've Been
-              </span>
-            </div>
-
-            {/* Split headline — matches global pattern */}
-            <div
-              className="flex flex-wrap items-end gap-x-4 leading-[0.9] tracking-[-0.04em] font-black"
-              style={{ fontSize: "clamp(40px, 7vw, 80px)" }}
-            >
-              <span
-                className="text-transparent select-none"
-                style={{
-                  WebkitTextStroke:
-                    "1.5px color-mix(in srgb, var(--foreground) 22%, transparent)",
-                }}
-              >
-                WORK
-              </span>
-              <span className="text-foreground">EXPERIENCE</span>
-              <span className="text-blue-600 dark:text-blue-500">.</span>
-            </div>
-          </motion.div>
-
-          {/* Scroll nav buttons */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="flex shrink-0 items-center gap-2 pb-2"
+            004 — trajectory
+          </p>
+          <h2
+            className="font-black tracking-[-0.03em] leading-[0.95]"
+            style={{ fontSize: "clamp(36px, 5.5vw, 68px)" }}
           >
-            <button
-              onClick={() => scroll(-1)}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-all hover:border-blue-500/30 hover:text-foreground"
-            >
-              <ArrowLeft size={15} />
-            </button>
-            <button
-              onClick={() => scroll(1)}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-all hover:border-blue-500/30 hover:text-foreground"
-            >
-              <ArrowRight size={15} />
-            </button>
-          </motion.div>
+            Where I am <span className="accent-word">now</span>.
+          </h2>
         </div>
 
-        {/* Horizontal scroll track */}
-        <div
-          ref={scrollRef}
-          className="flex gap-4 overflow-x-auto scroll-smooth pb-4"
-          style={{
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
-            paddingLeft: "max(24px, calc((100vw - 1280px) / 2 + 56px))",
-            paddingRight: "max(24px, calc((100vw - 1280px) / 2 + 56px))",
-          }}
-        >
-          {experiences.map((exp, i) => (
-            <motion.div
-              key={exp.id}
-              initial={{ opacity: 0, x: 24 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08 }}
-              className="group relative flex w-[340px] shrink-0 flex-col rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-blue-500/25 hover:bg-blue-600/[0.02]"
-            >
-              {/* Top accent line on hover */}
-              <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl overflow-hidden">
-                <div className="h-full w-full bg-gradient-to-r from-blue-600 to-violet-600 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300" />
-              </div>
+        {current && <NowBlock exp={current} />}
 
-              {/* Index number */}
-              <span
-                className="mb-4 block font-black tracking-[-0.04em] text-transparent select-none"
-                style={{
-                  fontSize: "48px",
-                  lineHeight: 1,
-                  WebkitTextStroke:
-                    "1.5px color-mix(in srgb, var(--foreground) 10%, transparent)",
-                }}
+        {past.length > 0 && (
+          <div>
+            <div className="flex items-baseline justify-between mb-2">
+              <p
+                className="mono-label text-[11px] uppercase tracking-wider"
+                style={{ color: "var(--muted-foreground)" }}
               >
-                {String(i + 1).padStart(2, "0")}
-              </span>
-
-              {/* Role */}
-              <div className="mb-1 flex items-start justify-between gap-3">
-                <h3 className="text-[15px] font-bold tracking-tight text-foreground">
-                  {exp.role}
-                </h3>
-                {exp.isCurrent && (
-                  <span className="flex shrink-0 items-center gap-1.5 rounded-full border border-green-500/20 bg-green-500/8 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-green-600 dark:text-green-400">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
-                    </span>
-                    Now
-                  </span>
-                )}
-              </div>
-
-              {/* Company */}
-              <p className="mb-4 text-[13px] font-semibold text-blue-600 dark:text-blue-500">
-                {exp.company}
+                Before that
               </p>
-
-              {/* Date + duration */}
-              <div className="mb-4 flex items-center gap-2 text-[11px] text-muted-foreground/60">
-                <Calendar size={11} />
-                <span>
-                  {formatDate(exp.startDate)} —{" "}
-                  {exp.isCurrent ? "Present" : formatDate(exp.endDate)}
-                </span>
-                <span className="ml-auto rounded-md border border-border bg-muted px-2 py-0.5 text-[10px] font-medium">
-                  {duration(exp.startDate, exp.endDate, exp.isCurrent)}
-                </span>
-              </div>
-
-              {/* Divider */}
-              <div className="mb-4 h-px w-full bg-border" />
-
-              {/* Description */}
-              <p className="flex-1 text-[13px] leading-relaxed text-muted-foreground line-clamp-4">
-                {exp.description}
+              <p
+                className="mono-label text-[11px]"
+                style={{ color: "var(--muted-foreground)" }}
+              >
+                {past.length} role{past.length !== 1 ? "s" : ""}
               </p>
-            </motion.div>
-          ))}
-        </div>
+            </div>
+            {past.map((exp, i) => (
+              <RecordRow
+                key={exp.id}
+                exp={exp}
+                index={i}
+                total={past.length}
+                isOpen={openId === exp.id}
+                onToggle={() => setOpenId(prev => (prev === exp.id ? null : exp.id))}
+              />
+            ))}
+          </div>
+        )}
 
-        {/* Fade edges */}
-        <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-background to-transparent z-20" />
-        <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-background to-transparent z-20" />
-
-        {/* Count */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.4 }}
-          className="mx-auto mt-5 max-w-[1280px] px-6 md:px-14 text-right text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground/25"
-        >
-          {experiences.length} position{experiences.length !== 1 ? "s" : ""}
-        </motion.p>
+        {!current && past.length === 0 && (
+          <p className="text-[13px]" style={{ color: "var(--muted-foreground)" }}>
+            No experience logged yet.
+          </p>
+        )}
       </div>
     </section>
   );

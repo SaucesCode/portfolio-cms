@@ -1,32 +1,12 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Send, Mail, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Send } from "lucide-react";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { toast } from "react-toastify";
 import api from "../../services/api";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } },
-};
-
-function Field({ label, error, children }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground/50">
-        {label}
-      </label>
-      {children}
-      {error && (
-        <span className="text-[11px] font-medium text-red-500 dark:text-red-400">{error}</span>
-      )}
-    </div>
-  );
-}
-
-const CONTACT_LINKS = [
+const DIRECT_LINKS = [
   {
-    icon: Mail,
     label: "Email",
     display: "jamessdemesa@email.com",
     href: "mailto:jamessdemesa@email.com",
@@ -40,15 +20,34 @@ const CONTACT_LINKS = [
   {
     icon: FaLinkedin,
     label: "LinkedIn",
-    display: "https://www.linkedin.com/in/james-patrick-de-mesa",
+    display: "linkedin.com/in/james-patrick-de-mesa",
     href: "https://www.linkedin.com/in/james-patrick-de-mesa-93582424b/",
   },
 ];
+
+// Inline "fill-in" input — no border box, just an underline that lights up on focus
+function GhostInput({ as = "input", className = "", ...props }) {
+  const Tag = as;
+  return (
+    <Tag
+      className={`inline-block bg-transparent border-0 border-b-2 outline-none px-1 pb-0.5 transition-colors duration-200 placeholder:italic ${className}`}
+      style={{
+        borderColor: "var(--rule)",
+        color: "var(--foreground)",
+        fontFamily: "inherit",
+      }}
+      onFocus={e => (e.target.style.borderColor = "var(--signal)")}
+      onBlur={e => (e.target.style.borderColor = "var(--rule)")}
+      {...props}
+    />
+  );
+}
 
 export default function Contact() {
   const [form, setForm] = useState({ name: "", email: "", subject: "", body: "" });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -58,10 +57,10 @@ export default function Contact() {
 
   const validate = () => {
     const newErrors = {};
-    if (!form.name.trim()) newErrors.name = "Name is required";
-    if (!form.email.trim()) newErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = "Enter a valid email";
-    if (!form.body.trim()) newErrors.body = "Message is required";
+    if (!form.name.trim()) newErrors.name = "your name";
+    if (!form.email.trim()) newErrors.email = "a valid email";
+    else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = "a valid email";
+    if (!form.body.trim()) newErrors.body = "a short message";
     return newErrors;
   };
 
@@ -75,230 +74,199 @@ export default function Contact() {
     setIsSubmitting(true);
     try {
       await api.post("/contact", form);
-      toast.success("Message sent! I'll get back to you soon.");
+      setSent(true);
       setForm({ name: "", email: "", subject: "", body: "" });
     } catch (error) {
-      const message = error.response?.data?.error || "Something went wrong. Please try again.";
-      toast.error(message);
+      toast.error(error.response?.data?.error || "Something went wrong. Try again?");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const inputClass = `
-    w-full px-4 py-2.5 rounded-xl text-[13px]
-    bg-muted/60 border border-border
-    text-foreground placeholder:text-muted-foreground/35
-    focus:outline-none focus:border-blue-500/40 focus:bg-blue-500/[0.02]
-    transition-all duration-200
-  `;
+  const missing = Object.values(errors).filter(Boolean);
 
   return (
-    <section
-      id="contact"
-      className="relative overflow-hidden bg-background border-y border-border"
-    >
-      {/* Grain */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-25"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E")`,
-          backgroundSize: "256px",
-        }}
-      />
-
-      {/* Grid lines dark only */}
-      <div
-        className="pointer-events-none absolute inset-0 hidden dark:block"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right,rgba(255,255,255,0.03) 1px,transparent 1px)," +
-            "linear-gradient(to bottom,rgba(255,255,255,0.03) 1px,transparent 1px)",
-          backgroundSize: "48px 48px",
-          maskImage: "radial-gradient(ellipse 80% 80% at 50% 50%,#000 40%,transparent 100%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse 80% 80% at 50% 50%,#000 40%,transparent 100%)",
-        }}
-      />
-
-      {/* Blue glow bottom-left */}
-      <div className="pointer-events-none absolute bottom-0 left-0 z-0 h-[350px] w-[350px] rounded-full bg-blue-600/6 dark:bg-blue-500/8 blur-[100px]" />
-
-      <div className="relative z-10 mx-auto max-w-[1280px] px-6 md:px-14 py-20">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-14"
-        >
-          <div className="mb-4 flex items-center gap-3">
-            <span className="h-px w-6 bg-border inline-block" />
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground/50">
-              Get In Touch
-            </span>
-          </div>
-
-          <div
-            className="flex flex-wrap items-end gap-x-4 leading-[0.9] tracking-[-0.04em] font-black"
-            style={{ fontSize: "clamp(40px, 7vw, 80px)" }}
-          >
-            <span
-              className="text-transparent select-none"
-              style={{
-                WebkitTextStroke:
-                  "1.5px color-mix(in srgb, var(--foreground) 22%, transparent)",
-              }}
-            >
-              LET'S
-            </span>
-            <span className="text-foreground">WORK</span>
-            <span className="text-blue-600 dark:text-blue-500">TOGETHER</span>
-            <span className="text-blue-600 dark:text-blue-500">.</span>
-          </div>
-        </motion.div>
-
-        {/* Content grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-10 lg:gap-16 items-start">
-          {/* Left — info + links */}
+    <section id="contact" className="border-t" style={{ background: "var(--background)", borderColor: "var(--rule)" }}>
+      <div className="mx-auto max-w-[1280px] px-6 md:px-14 py-20 md:py-32">
+        <div className="grid grid-cols-1 md:grid-cols-[0.85fr_1.15fr] gap-16 md:gap-20">
+          {/* Left — the invitation + colophon */}
           <motion.div
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true }}
-            className="flex flex-col gap-8"
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <p className="text-[14px] leading-[1.75] text-muted-foreground/70 max-w-[380px]">
-              I'm currently available for freelance work and full-time positions. Have a
-              project in mind or just want to say hi? I'd love to hear from you.
+            <p className="mono-label text-[11px] mb-6" style={{ color: "var(--muted-foreground)" }}>
+              006 — get in touch
+            </p>
+            <h2
+              className="font-black tracking-[-0.03em] leading-[0.98] mb-6"
+              style={{ fontSize: "clamp(36px, 5.2vw, 62px)" }}
+            >
+              Got something
+              <br />
+              worth <span className="accent-word">building</span>?
+            </h2>
+            <p className="max-w-[360px] text-[14.5px] leading-[1.8] mb-12" style={{ color: "var(--muted-foreground)" }}>
+              I read every message myself. If it's a project, a role, or just a question about
+              something I built — say hello below, or reach me directly.
             </p>
 
-            {/* Contact links */}
-            <div className="flex flex-col gap-3">
-              {CONTACT_LINKS.map(({ icon: Icon, label, display, href }) => (
-                <a
+            <div className="flex items-center gap-2.5 mb-8">
+              <span className="relative flex h-1.5 w-1.5">
+                <span
+                  className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
+                  style={{ background: "var(--signal-warm)" }}
+                />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ background: "var(--signal-warm)" }} />
+              </span>
+              <span className="mono-label text-[11px]" style={{ color: "var(--signal-warm)" }}>
+                Usually replies within 24 hours
+              </span>
+            </div>
+
+            {/* Colophon — direct links, set like a magazine's masthead credits */}
+            <div className="border-t" style={{ borderColor: "var(--rule)" }}>
+              {DIRECT_LINKS.map(({ icon: Icon, label, display, href }) => (
+               <a 
                   key={label}
                   href={href}
                   target={href.startsWith("mailto") ? undefined : "_blank"}
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 transition-all duration-300 hover:border-blue-500/25 hover:bg-blue-600/[0.02] hover:-translate-y-0.5"
+                  className="group flex items-center justify-between gap-4 py-4 border-b transition-colors"
+                  style={{ borderColor: "var(--rule)" }}
                 >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/15 bg-blue-500/8 text-blue-600 dark:text-blue-400">
-                    <Icon size={15} strokeWidth={1.8} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground/40 mb-0.5">
+                  <div className="flex items-baseline gap-3 min-w-0">
+                    <span className="mono-label text-[10px] uppercase tracking-wider w-16 shrink-0" style={{ color: "var(--muted-foreground)" }}>
                       {label}
-                    </p>
-                    <p className="text-[13px] font-medium text-foreground truncate">
+                    </span>
+                    <span className="text-[13.5px] font-medium truncate transition-colors group-hover:opacity-70">
                       {display}
-                    </p>
+                    </span>
                   </div>
                   <ArrowUpRight
                     size={14}
-                    className="text-muted-foreground/25 group-hover:text-blue-500 transition-colors shrink-0"
+                    className="shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                    style={{ color: "var(--muted-foreground)" }}
                   />
                 </a>
               ))}
             </div>
-
-            {/* Availability tag */}
-            <div className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground/50">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
-              </span>
-              Usually responds within 24 hours
-            </div>
           </motion.div>
 
-          {/* Right — form */}
+          {/* Right — the sentence-form */}
           <motion.div
-            variants={fadeUp}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           >
-            <form
-              onSubmit={handleSubmit}
-              className="relative flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 md:p-8"
-            >
-              {/* Top accent line */}
-              <div className="absolute top-0 left-6 right-6 h-[2px] rounded-full bg-gradient-to-r from-blue-600 to-violet-600 opacity-40" />
-
-              {/* Name + Email row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Name" error={errors.name}>
-                  <input
-                    type="text"
+            {sent ? (
+              <div className="flex flex-col justify-center h-full min-h-[360px]">
+                <p
+                  className="mb-4"
+                  style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: "clamp(28px,4vw,40px)", color: "var(--signal)" }}
+                >
+                  Message sent.
+                </p>
+                <p className="text-[14px] leading-[1.8]" style={{ color: "var(--muted-foreground)" }}>
+                  Thanks for reaching out — I'll get back to you soon. In the meantime, feel free
+                  to poke around the rest of the site.
+                </p>
+                <button
+                  onClick={() => setSent(false)}
+                  className="mt-8 text-[12px] font-bold uppercase tracking-wider border-b-2 pb-0.5 w-fit"
+                  style={{ borderColor: "var(--signal)" }}
+                >
+                  Send another
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} noValidate>
+                {/* The sentence itself */}
+                <p
+                  className="leading-[2.1] md:leading-[2.3]"
+                  style={{ fontSize: "clamp(20px, 2.6vw, 28px)", fontWeight: 500, letterSpacing: "-0.01em" }}
+                >
+                  Hi, my name is{" "}
+                  <GhostInput
                     name="name"
                     value={form.name}
                     onChange={handleChange}
-                    placeholder="Juan dela Cruz"
-                    className={inputClass}
+                    placeholder="your name"
+                    aria-label="Your name"
+                    style={{ width: "9ch" }}
                   />
-                </Field>
-
-                <Field label="Email" error={errors.email}>
-                  <input
+                  . You can reach me back at{" "}
+                  <GhostInput
                     type="email"
                     name="email"
                     value={form.email}
                     onChange={handleChange}
-                    placeholder="juan@email.com"
-                    className={inputClass}
+                    placeholder="you@email.com"
+                    aria-label="Your email"
+                    style={{ width: "16ch" }}
                   />
-                </Field>
-              </div>
+                  {" "}— I wanted to talk about{" "}
+                  <GhostInput
+                    name="subject"
+                    value={form.subject}
+                    onChange={handleChange}
+                    placeholder="a project"
+                    aria-label="Subject"
+                    style={{ width: "12ch" }}
+                  />
+                  .
+                </p>
 
-              <Field label="Subject (optional)">
-                <input
-                  type="text"
-                  name="subject"
-                  value={form.subject}
-                  onChange={handleChange}
-                  placeholder="Project inquiry"
-                  className={inputClass}
-                />
-              </Field>
+                {/* The message — full width, still borderless/underlined */}
+                <div className="mt-10">
+                  <label htmlFor="contact-body" className="mono-label text-[10px] uppercase tracking-wider block mb-3" style={{ color: "var(--muted-foreground)" }}>
+                    The details
+                  </label>
+                  <textarea
+                    id="contact-body"
+                    name="body"
+                    value={form.body}
+                    onChange={handleChange}
+                    placeholder="Tell me what you're building, or what you need — as much or as little detail as you like."
+                    rows={4}
+                    className="w-full bg-transparent border-0 border-b-2 outline-none py-2 text-[14.5px] leading-[1.8] resize-none transition-colors duration-200 placeholder:italic"
+                    style={{ borderColor: "var(--rule)", color: "var(--foreground)" }}
+                    onFocus={e => (e.target.style.borderColor = "var(--signal)")}
+                    onBlur={e => (e.target.style.borderColor = "var(--rule)")}
+                  />
+                </div>
 
-              <Field label="Message" error={errors.body}>
-                <textarea
-                  name="body"
-                  value={form.body}
-                  onChange={handleChange}
-                  placeholder="Tell me about your project..."
-                  rows={5}
-                  className={`${inputClass} resize-none`}
-                />
-              </Field>
-
-              {/* Divider */}
-              <div className="h-px w-full bg-border" />
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="group flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3 text-[12px] font-bold uppercase tracking-[0.1em] text-white transition-all duration-200 shadow-lg shadow-blue-600/20 hover:shadow-blue-500/25 hover:-translate-y-px"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="h-3.5 w-3.5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send
-                      size={13}
-                      className="transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                    />
-                    Send Message
-                  </>
+                {missing.length > 0 && (
+                  <p className="mt-4 text-[12px]" style={{ color: "var(--signal-warm)" }}>
+                    Still need: {missing.join(", ")}.
+                  </p>
                 )}
-              </button>
-            </form>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="group mt-10 inline-flex items-center gap-2.5 px-6 py-3 text-[12px] font-bold uppercase tracking-wider transition-opacity disabled:opacity-50"
+                  style={{ background: "var(--signal)", color: "var(--background)" }}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span
+                        className="h-3.5 w-3.5 rounded-full border-2 animate-spin"
+                        style={{ borderColor: "color-mix(in oklch, var(--background) 40%, transparent)", borderTopColor: "var(--background)" }}
+                      />
+                      Sending
+                    </>
+                  ) : (
+                    <>
+                      Send it over
+                      <Send size={13} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
           </motion.div>
         </div>
       </div>
