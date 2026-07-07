@@ -26,15 +26,16 @@ const DIRECT_LINKS = [
 ];
 
 // Inline "fill-in" input — no border box, just an underline that lights up on focus
-function GhostInput({ as = "input", className = "", ...props }) {
+function GhostInput({ as = "input", className = "", style, ...props }) {
   const Tag = as;
   return (
     <Tag
-      className={`inline-block bg-transparent border-0 border-b-2 outline-none px-1 pb-0.5 transition-colors duration-200 placeholder:italic ${className}`}
+      className={`inline-block bg-transparent border-0 border-b-2 outline-none px-1 pb-0.5 transition-colors duration-200 placeholder:italic placeholder:opacity-100 placeholder:text-[var(--muted-foreground)] ${className}`}
       style={{
         borderColor: "var(--rule)",
         color: "var(--foreground)",
         fontFamily: "inherit",
+        ...style, // caller's style (e.g. width) now merges with, rather than replaces, the base styles
       }}
       onFocus={e => (e.target.style.borderColor = "var(--signal)")}
       onBlur={e => (e.target.style.borderColor = "var(--rule)")}
@@ -86,7 +87,11 @@ export default function Contact() {
   const missing = Object.values(errors).filter(Boolean);
 
   return (
-    <section id="contact" className="border-t" style={{ background: "var(--background)", borderColor: "var(--rule)" }}>
+    <section
+      id="contact"
+      className="border-t"
+      style={{ background: "var(--background)", borderColor: "var(--rule)" }}
+    >
       <div className="mx-auto max-w-[1280px] px-6 md:px-14 py-20 md:py-32">
         <div className="grid grid-cols-1 md:grid-cols-[0.85fr_1.15fr] gap-16 md:gap-20">
           {/* Left — the invitation + colophon */}
@@ -96,7 +101,10 @@ export default function Contact() {
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <p className="mono-label text-[11px] mb-6" style={{ color: "var(--muted-foreground)" }}>
+            <p
+              className="mono-label text-[11px] mb-6"
+              style={{ color: "var(--muted-foreground)" }}
+            >
               006 — get in touch
             </p>
             <h2
@@ -107,7 +115,10 @@ export default function Contact() {
               <br />
               worth <span className="accent-word">building</span>?
             </h2>
-            <p className="max-w-[360px] text-[14.5px] leading-[1.8] mb-12" style={{ color: "var(--muted-foreground)" }}>
+            <p
+              className="max-w-[360px] text-[14.5px] leading-[1.8] mb-12"
+              style={{ color: "var(--muted-foreground)" }}
+            >
               I read every message myself. If it's a project, a role, or just a question about
               something I built — say hello below, or reach me directly.
             </p>
@@ -118,7 +129,10 @@ export default function Contact() {
                   className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
                   style={{ background: "var(--signal-warm)" }}
                 />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ background: "var(--signal-warm)" }} />
+                <span
+                  className="relative inline-flex h-1.5 w-1.5 rounded-full"
+                  style={{ background: "var(--signal-warm)" }}
+                />
               </span>
               <span className="mono-label text-[11px]" style={{ color: "var(--signal-warm)" }}>
                 Usually replies within 24 hours
@@ -128,7 +142,7 @@ export default function Contact() {
             {/* Colophon — direct links, set like a magazine's masthead credits */}
             <div className="border-t" style={{ borderColor: "var(--rule)" }}>
               {DIRECT_LINKS.map(({ icon: Icon, label, display, href }) => (
-               <a 
+                <a
                   key={label}
                   href={href}
                   target={href.startsWith("mailto") ? undefined : "_blank"}
@@ -137,7 +151,10 @@ export default function Contact() {
                   style={{ borderColor: "var(--rule)" }}
                 >
                   <div className="flex items-baseline gap-3 min-w-0">
-                    <span className="mono-label text-[10px] uppercase tracking-wider w-16 shrink-0" style={{ color: "var(--muted-foreground)" }}>
+                    <span
+                      className="mono-label text-[10px] uppercase tracking-wider w-16 shrink-0"
+                      style={{ color: "var(--muted-foreground)" }}
+                    >
                       {label}
                     </span>
                     <span className="text-[13.5px] font-medium truncate transition-colors group-hover:opacity-70">
@@ -165,13 +182,21 @@ export default function Contact() {
               <div className="flex flex-col justify-center h-full min-h-[360px]">
                 <p
                   className="mb-4"
-                  style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontSize: "clamp(28px,4vw,40px)", color: "var(--signal)" }}
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontStyle: "italic",
+                    fontSize: "clamp(28px,4vw,40px)",
+                    color: "var(--signal)",
+                  }}
                 >
                   Message sent.
                 </p>
-                <p className="text-[14px] leading-[1.8]" style={{ color: "var(--muted-foreground)" }}>
-                  Thanks for reaching out — I'll get back to you soon. In the meantime, feel free
-                  to poke around the rest of the site.
+                <p
+                  className="text-[14px] leading-[1.8]"
+                  style={{ color: "var(--muted-foreground)" }}
+                >
+                  Thanks for reaching out — I'll get back to you soon. In the meantime, feel
+                  free to poke around the rest of the site.
                 </p>
                 <button
                   onClick={() => setSent(false)}
@@ -186,7 +211,11 @@ export default function Contact() {
                 {/* The sentence itself */}
                 <p
                   className="leading-[2.1] md:leading-[2.3]"
-                  style={{ fontSize: "clamp(20px, 2.6vw, 28px)", fontWeight: 500, letterSpacing: "-0.01em" }}
+                  style={{
+                    fontSize: "clamp(20px, 2.6vw, 28px)",
+                    fontWeight: 500,
+                    letterSpacing: "-0.01em",
+                  }}
                 >
                   Hi, my name is{" "}
                   <GhostInput
@@ -206,8 +235,8 @@ export default function Contact() {
                     placeholder="you@email.com"
                     aria-label="Your email"
                     style={{ width: "16ch" }}
-                  />
-                  {" "}— I wanted to talk about{" "}
+                  />{" "}
+                  — I wanted to talk about{" "}
                   <GhostInput
                     name="subject"
                     value={form.subject}
@@ -221,7 +250,11 @@ export default function Contact() {
 
                 {/* The message — full width, still borderless/underlined */}
                 <div className="mt-10">
-                  <label htmlFor="contact-body" className="mono-label text-[10px] uppercase tracking-wider block mb-3" style={{ color: "var(--muted-foreground)" }}>
+                  <label
+                    htmlFor="contact-body"
+                    className="mono-label text-[10px] uppercase tracking-wider block mb-3"
+                    style={{ color: "var(--muted-foreground)" }}
+                  >
                     The details
                   </label>
                   <textarea
@@ -231,7 +264,7 @@ export default function Contact() {
                     onChange={handleChange}
                     placeholder="Tell me what you're building, or what you need — as much or as little detail as you like."
                     rows={4}
-                    className="w-full bg-transparent border-0 border-b-2 outline-none py-2 text-[14.5px] leading-[1.8] resize-none transition-colors duration-200 placeholder:italic"
+                    className="w-full bg-transparent border-0 border-b-2 outline-none py-2 text-[14.5px] leading-[1.8] resize-none transition-colors duration-200 placeholder:italic placeholder:opacity-100 placeholder:text-[var(--muted-foreground)]"
                     style={{ borderColor: "var(--rule)", color: "var(--foreground)" }}
                     onFocus={e => (e.target.style.borderColor = "var(--signal)")}
                     onBlur={e => (e.target.style.borderColor = "var(--rule)")}
@@ -254,14 +287,21 @@ export default function Contact() {
                     <>
                       <span
                         className="h-3.5 w-3.5 rounded-full border-2 animate-spin"
-                        style={{ borderColor: "color-mix(in oklch, var(--background) 40%, transparent)", borderTopColor: "var(--background)" }}
+                        style={{
+                          borderColor:
+                            "color-mix(in oklch, var(--background) 40%, transparent)",
+                          borderTopColor: "var(--background)",
+                        }}
                       />
                       Sending
                     </>
                   ) : (
                     <>
                       Send it over
-                      <Send size={13} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+                      <Send
+                        size={13}
+                        className="transition-transform duration-200 group-hover:translate-x-0.5"
+                      />
                     </>
                   )}
                 </button>

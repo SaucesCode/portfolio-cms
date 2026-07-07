@@ -14,6 +14,8 @@ import { FaGithub } from "react-icons/fa";
 import { toast } from "react-toastify";
 import api from "../../services/api";
 import TagInput from "../../components/admin/TagInput";
+import PublishBadge from "@/components/admin/PublishBadge";
+import PublishMenu from "@/components/admin/PublishMenu";
 
 const emptyForm = {
   title: "",
@@ -74,7 +76,7 @@ export default function ProjectEditor() {
 
   const { data: existing, isLoading } = useQuery({
     queryKey: ["admin-project", id],
-    queryFn: () => api.get(`/projects/${id}`).then(r => r.data),
+    queryFn: () => api.get(`/admin/projects/${id}`).then(r => r.data),
     enabled: !isNew,
   });
 
@@ -364,11 +366,35 @@ export default function ProjectEditor() {
         </div>
       </Section>
 
-      {/* Organize */}
       <Section
-        title="Organize"
-        description="Controls how this project is highlighted and ordered."
+        title="Publishing"
+        description="Controls whether and when this project appears on the live site."
       >
+        <div
+          className="flex items-center justify-between gap-4 px-3.5 h-11 rounded-lg"
+          style={{ border: "1px solid var(--rule)" }}
+        >
+          <div>
+            <p className="text-[13px] font-medium">Current status</p>
+            {!isNew && (
+              <p className="text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>
+                Last updated{" "}
+                {new Date(existing?.updatedAt || Date.now()).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
+            )}
+          </div>
+          {!isNew && (
+            <PublishBadge
+              status={existing?.status}
+              scheduledAt={existing?.scheduledAt}
+              publishedAt={existing?.publishedAt}
+            />
+          )}
+        </div>
+
         <div
           className="flex items-center justify-between gap-4 px-3.5 h-11 rounded-lg"
           style={{ border: "1px solid var(--rule)" }}
@@ -394,6 +420,7 @@ export default function ProjectEditor() {
             />
           </button>
         </div>
+
         <Field
           label="Sort position"
           hint="Lower numbers appear first. Ties break by creation date."
@@ -436,13 +463,30 @@ export default function ProjectEditor() {
             </button>
           )}
           <button
-            onClick={() => handleSave(true)}
+            onClick={async () => {
+              await handleSave(false); // persist field edits first
+              if (!isNew) {
+                try {
+                  await api.patch(`/admin/projects/${id}/publish`);
+                  toast.success("Published");
+                  navigate("/admin/projects");
+                } catch {
+                  toast.error("Couldn't publish — try again");
+                }
+              } else {
+                navigate("/admin/projects");
+              }
+            }}
             disabled={isSaving}
             className="flex items-center gap-1.5 px-4 h-9 rounded-lg text-[12.5px] font-semibold transition-opacity disabled:opacity-50"
             style={{ background: "var(--signal)", color: "var(--background)" }}
           >
             <Check size={14} />
-            {isSaving ? "Saving..." : isNew ? "Create project" : "Save changes"}
+            {isSaving
+              ? "Saving..."
+              : existing?.status === "PUBLISHED"
+                ? "Update"
+                : "Save & publish"}
           </button>
         </div>
       </div>

@@ -22,6 +22,11 @@ import { toast } from "react-toastify";
 import api from "../../services/api";
 import PageHeader from "../../components/admin/PageHeader";
 import EmptyState from "../../components/admin/EmptyState";
+import PublishBadge from "@/components/admin/PublishBadge";
+import PublishMenu from "@/components/admin/PublishMenu";
+import { createPublishingApi } from "../../services/publishing";
+import { usePublishingActions } from "../../hooks/usePublishingActions";
+import StatusTabs from "../../components/admin/StatusTabs";
 
 const SORTS = [
   { id: "order", label: "Manual order" },
@@ -29,6 +34,9 @@ const SORTS = [
   { id: "title", label: "Title (A–Z)" },
   { id: "stars", label: "Most stars" },
 ];
+
+const STATUS_TABS = ["All", "Published", "Scheduled", "Draft", "Archived"];
+
 
 function StatusPill({ featured }) {
   return (
@@ -76,6 +84,8 @@ export default function ManageProjects() {
   const [selected, setSelected] = useState(new Set());
   const [isSyncing, setIsSyncing] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("All");
+
 
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["admin-projects"],
@@ -89,6 +99,8 @@ export default function ManageProjects() {
 
   const filtered = useMemo(() => {
     let list = [...projects];
+    if (statusFilter !== "All")
+      list = list.filter(p => p.status === statusFilter.toUpperCase());
     if (techFilter !== "All") list = list.filter(p => p.techStack?.includes(techFilter));
     if (query.trim()) {
       const q = query.toLowerCase();
@@ -124,6 +136,12 @@ export default function ManageProjects() {
     queryClient.invalidateQueries({ queryKey: ["admin-projects"] });
     queryClient.invalidateQueries({ queryKey: ["projects"] });
   };
+
+  const publishingApi = createPublishingApi("/admin/projects");
+  const { handleTransition } = usePublishingActions(publishingApi, [
+    ["admin-projects"],
+    ["projects"],
+  ]);
 
   const handleDelete = async id => {
     if (!window.confirm("Delete this project? This can't be undone.")) return;
@@ -223,6 +241,8 @@ export default function ManageProjects() {
           </div>
         }
       />
+
+      <StatusTabs value={statusFilter} onChange={setStatusFilter} />
 
       {/* Toolbar — search, filter, sort, view toggle */}
       <div className="flex flex-wrap items-center gap-2.5 mb-5">
@@ -437,9 +457,18 @@ export default function ManageProjects() {
                   style={{ accentColor: "var(--signal)" }}
                   aria-label={`Select ${project.title}`}
                 />
-                <div className="absolute top-2.5 right-2.5">
-                  <StatusPill featured={project.featured} />
+                <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                  <PublishBadge
+                    status={project.status}
+                    scheduledAt={project.scheduledAt}
+                    publishedAt={project.publishedAt}
+                  />
                 </div>
+
+                <PublishMenu
+                  status={project.status}
+                  onAction={(action, payload) => handleTransition(project, action, payload)}
+                />
               </div>
 
               <div className="p-3.5">
@@ -540,10 +569,23 @@ export default function ManageProjects() {
               />
               <Thumb project={project} />
               <div className="min-w-0 flex-1">
+                {/* list row */}
                 <div className="flex items-center gap-2 mb-0.5">
                   <h3 className="text-[13.5px] font-semibold truncate">{project.title}</h3>
-                  <StatusPill featured={project.featured} />
+                  {project.featured && (
+                    <Star size={11} style={{ color: "var(--signal)" }} fill="currentColor" />
+                  )}
                 </div>
+                <PublishBadge
+                  status={project.status}
+                  scheduledAt={project.scheduledAt}
+                  publishedAt={project.publishedAt}
+                />
+                ...
+                <PublishMenu
+                  status={project.status}
+                  onAction={(action, payload) => handleTransition(project, action, payload)}
+                />
                 <p
                   className="text-[12px] truncate"
                   style={{ color: "var(--muted-foreground)" }}

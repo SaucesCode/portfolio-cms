@@ -6,11 +6,23 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ContentStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
 model AdminUser {
   id           Int      @id @default(autoincrement())
   email        String   @unique
   passwordHash String
   createdAt    DateTime @default(now())
+
+  createdProjects Project[] @relation("ProjectCreatedBy")
+  updatedProjects Project[] @relation("ProjectUpdatedBy")
+  createdSkills   Skill[]   @relation("SkillCreatedBy")
+  updatedSkills   Skill[]   @relation("SkillUpdatedBy")
 
   @@map("admin_users")
 }
@@ -23,13 +35,15 @@ model Hero {
   profileImageUrl  String?
   resumeUrl        String?
   availableForWork Boolean  @default(true)
-  updatedAt        DateTime @updatedAt
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
 
   @@map("hero")
 }
 
 model Project {
-  id             Int       @id @default(autoincrement())
+  id             Int           @id @default(autoincrement())
   title          String
   description    String
   techStack      String[]
@@ -41,9 +55,20 @@ model Project {
   forks          Int?
   language       String?
   githubSyncedAt DateTime?
-  featured       Boolean   @default(false)
-  orderIndex     Int       @default(0)
-  createdAt      DateTime  @default(now())
+  featured       Boolean       @default(false)
+  orderIndex     Int           @default(0)
+  createdAt      DateTime      @default(now())
+
+  status         ContentStatus @default(DRAFT)
+  publishedAt    DateTime?
+  scheduledAt    DateTime?
+  archivedAt     DateTime?
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  createdById    Int?
+  updatedById    Int?
+  createdBy      AdminUser?    @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy      AdminUser?    @relation("ProjectUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@map("projects")
 }
@@ -55,6 +80,18 @@ model Skill {
   proficiencyLevel Int     @default(3)
   iconName         String?
   orderIndex       Int     @default(0)
+
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  archivedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
+
+  createdById Int?
+  updatedById Int?
+  createdBy   AdminUser? @relation("SkillCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   AdminUser? @relation("SkillUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@map("skills")
 }

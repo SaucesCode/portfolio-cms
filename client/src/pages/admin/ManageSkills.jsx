@@ -1,22 +1,18 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  X,
-  Check,
-  Code,
-  Settings,
-  Briefcase,
-  Layout,
-} from "lucide-react";
+import { Plus, Search, ChevronUp, ChevronDown, Pencil, Trash2, Wrench } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "../../services/api";
+import { createPublishingApi } from "../../services/publishing";
+import { usePublishingActions } from "../../hooks/usePublishingActions";
+import PageHeader from "../../components/admin/PageHeader";
+import EmptyState from "../../components/admin/EmptyState";
+import StatusTabs from "../../components/admin/StatusTabs";
+import PublishBadge from "../../components/admin/PublishBadge";
+import PublishMenu from "../../components/admin/PublishMenu";
 
 const CATEGORIES = ["Frontend", "Backend", "Tools", "Other"];
-
 const emptyForm = {
   name: "",
   category: "Frontend",
@@ -25,35 +21,62 @@ const emptyForm = {
   orderIndex: 0,
 };
 
-const getCategoryIcon = category => {
-  switch (category) {
-    case "Frontend":
-      return <Layout size={14} />;
-    case "Backend":
-      return <Code size={14} />;
-    case "Tools":
-      return <Settings size={14} />;
-    default:
-      return <Briefcase size={14} />;
-  }
-};
+function ProficiencyDots({ level, onChange }) {
+  return (
+    <div
+      className="flex items-center gap-1"
+      role="group"
+      aria-label={`Proficiency ${level} of 5`}
+    >
+      {[1, 2, 3, 4, 5].map(n => (
+        <button
+          key={n}
+          onClick={() => onChange(n)}
+          aria-label={`Set proficiency to ${n}`}
+          className="h-2.5 w-2.5 rounded-full transition-colors"
+          style={{ background: n <= level ? "var(--signal)" : "var(--rule)" }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function ManageSkills() {
   const queryClient = useQueryClient();
+  const publishingApi = createPublishingApi("/admin/skills");
+  const { handleTransition } = usePublishingActions(publishingApi, [
+    ["admin-skills"],
+    ["skills"],
+  ]);
+
+  const [query, setQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: skills = [], isLoading } = useQuery({
     queryKey: ["admin-skills"],
-    queryFn: () => api.get("/admin/skills").then(res => res.data),
+    queryFn: () => api.get("/admin/skills").then(r => r.data),
   });
 
-  const handleChange = e => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["admin-skills"] });
+    queryClient.invalidateQueries({ queryKey: ["skills"] });
   };
+
+  const filtered = useMemo(() => {
+    let list = [...skills];
+    if (statusFilter !== "All")
+      list = list.filter(s => s.status === statusFilter.toUpperCase());
+    if (categoryFilter !== "All") list = list.filter(s => s.category === categoryFilter);
+    if (query.trim())
+      list = list.filter(s => s.name.toLowerCase().includes(query.toLowerCase()));
+    return list.sort((a, b) => a.orderIndex - b.orderIndex);
+  }, [skills, statusFilter, categoryFilter, query]);
+
+  const handleChange = e => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleEdit = skill => {
     setEditingId(skill.id);
@@ -75,277 +98,325 @@ export default function ManageSkills() {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    if (!form.name.trim()) {
-      toast.error("Skill name is required");
-      return;
-    }
-
-    setIsSubmitting(true);
+    if (!form.name.trim()) return toast.error("Name is required");
     try {
       const payload = {
         ...form,
         proficiencyLevel: parseInt(form.proficiencyLevel),
         orderIndex: parseInt(form.orderIndex),
       };
-
       if (editingId) {
         await api.patch(`/admin/skills/${editingId}`, payload);
-        toast.success("Skill updated");
+        toast.success("Changes saved");
       } else {
         await api.post("/admin/skills", payload);
-        toast.success("Skill added");
+        toast.success("Skill added as draft — publish it when ready");
       }
-
-      queryClient.invalidateQueries({ queryKey: ["admin-skills"] });
-      queryClient.invalidateQueries({ queryKey: ["skills"] });
+      invalidate();
       handleCancel();
-    } catch (error) {
-      toast.error("Something went wrong");
-    } finally {
-      setIsSubmitting(false);
+    } catch {
+      toast.error("Couldn't save — try again");
     }
   };
 
   const handleDelete = async id => {
-    if (!window.confirm("Delete this skill?")) return;
-
+    if (!window.confirm("Delete this skill? This can't be undone.")) return;
     try {
       await api.delete(`/admin/skills/${id}`);
       toast.success("Skill deleted");
-      queryClient.invalidateQueries({ queryKey: ["admin-skills"] });
-      queryClient.invalidateQueries({ queryKey: ["skills"] });
-    } catch (error) {
-      toast.error("Failed to delete");
+      invalidate();
+    } catch {
+      toast.error("Couldn't delete — try again");
     }
   };
 
-  const inputClass = `
-    w-full px-3 h-10 rounded-lg text-[11px] font-mono tracking-wide
-    bg-background border border-border
-    text-white placeholder:text-muted-foreground/40
-    focus:outline-none focus:border-foreground/20 focus:ring-1 focus:ring-foreground/10
-    transition-all duration-150
-  `;
+  const handleProficiencyChange = async (skill, level) => {
+    try {
+      await api.patch(`/admin/skills/${skill.id}`, { proficiencyLevel: level });
+      invalidate();
+    } catch {
+      toast.error("Couldn't update — try again");
+    }
+  };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-24 select-none">
-        <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-      </div>
-    );
-  }
+  // Manual reorder — swaps orderIndex with the adjacent row, then reuses the shared reorder endpoint
+  const handleMove = async (skill, direction) => {
+    const sorted = [...skills].sort((a, b) => a.orderIndex - b.orderIndex);
+    const idx = sorted.findIndex(s => s.id === skill.id);
+    const swapIdx = idx + direction;
+    if (swapIdx < 0 || swapIdx >= sorted.length) return;
+    const other = sorted[swapIdx];
+    try {
+      await api.patch("/admin/skills/reorder", {
+        items: [
+          { id: skill.id, orderIndex: other.orderIndex },
+          { id: other.id, orderIndex: skill.orderIndex },
+        ],
+      });
+      invalidate();
+    } catch {
+      toast.error("Couldn't reorder — try again");
+    }
+  };
+
+  const inputClass = "w-full px-3 h-9 rounded-lg text-[13px] outline-none";
+  const inputStyle = { border: "1px solid var(--rule)", background: "var(--background)" };
 
   return (
-    <div className="w-full selection:bg-primary/10 selection:text-primary">
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-6 select-none">
-        <div>
-          <h1 className="text-xs font-black uppercase tracking-[0.25em] text-foreground mb-1">
-            Skill Matrix
-          </h1>
-          <p className="text-[11px] font-mono text-muted-foreground">
-            Mutate and balance specialized core competencies ({skills.length} records)
-          </p>
-        </div>
+    <div>
+      <PageHeader
+        eyebrow={`${skills.length} total`}
+        title="Skills"
+        description="The proficiency field on your portfolio's Skills section."
+        action={
+          !showForm && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="flex items-center gap-1.5 px-3.5 h-9 rounded-lg text-[12.5px] font-semibold transition-opacity hover:opacity-90"
+              style={{ background: "var(--signal)", color: "var(--background)" }}
+            >
+              <Plus size={14} />
+              New skill
+            </button>
+          )
+        }
+      />
 
-        {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-3.5 h-10 bg-primary text-primary-foreground text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors hover:bg-primary/90 cursor-pointer shadow-sm"
-          >
-            <Plus size={12} />
-            Initialize Node
-          </button>
-        )}
-      </div>
-
-      {/* Add / Edit form */}
       <AnimatePresence>
         {showForm && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            className="bg-card border border-border rounded-xl p-5 subpixel-antialiased shadow-sm mb-5"
+          <motion.form
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            onSubmit={handleSubmit}
+            className="overflow-hidden mb-6"
           >
-            <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4 border-b border-border/50 pb-2">
-              {editingId ? "Edit Configuration Registry" : "New Configuration Registry"}
-            </h2>
-
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Name */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
-                    Skill Identifier Name
-                  </label>
+            <div
+              className="p-5 rounded-lg mb-1"
+              style={{ border: "1px solid var(--rule)", background: "var(--card)" }}
+            >
+              <p className="text-[13px] font-semibold mb-4">
+                {editingId ? "Edit skill" : "New skill"}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-[12px] font-medium mb-1.5">Name</label>
                   <input
                     name="name"
                     value={form.name}
                     onChange={handleChange}
                     placeholder="e.g. React"
                     className={inputClass}
+                    style={inputStyle}
                   />
                 </div>
-
-                {/* Category Dropdown (Explicit fallback styling for absolute visibility) */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
-                    Classification Category
-                  </label>
+                <div>
+                  <label className="block text-[12px] font-medium mb-1.5">Category</label>
                   <select
                     name="category"
                     value={form.category}
                     onChange={handleChange}
-                    className="w-full px-3 h-10 rounded-lg text-[11px] font-mono tracking-wide bg-neutral-900 border border-neutral-800 text-white cursor-pointer focus:outline-none focus:border-blue-500"
+                    className={`${inputClass} cursor-pointer`}
+                    style={inputStyle}
                   >
                     {CATEGORIES.map(c => (
-                      <option
-                        key={c}
-                        value={c}
-                        className="bg-neutral-900 text-white font-mono text-xs"
-                      >
+                      <option key={c} value={c}>
                         {c}
                       </option>
                     ))}
                   </select>
                 </div>
-
-                {/* Order index */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
-                    Order Sequence Index
+                <div>
+                  <label className="block text-[12px] font-medium mb-1.5">
+                    Proficiency — {form.proficiencyLevel}/5
                   </label>
+                  <input
+                    type="range"
+                    name="proficiencyLevel"
+                    min="1"
+                    max="5"
+                    value={form.proficiencyLevel}
+                    onChange={handleChange}
+                    className="w-full"
+                    style={{ accentColor: "var(--signal)" }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium mb-1.5">Sort position</label>
                   <input
                     type="number"
                     name="orderIndex"
                     value={form.orderIndex}
                     onChange={handleChange}
                     className={inputClass}
+                    style={inputStyle}
                   />
                 </div>
-
-                {/* Proficiency Weight Slider (Forced styling fallback for explicit line view) */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
-                    Proficiency Weight Vector: {form.proficiencyLevel} / 5
-                  </label>
-                  <div className="flex items-center h-10 border border-border rounded-lg px-4 bg-background relative">
-                    {/* Fallback structural inline guide track layout */}
-                    <div className="absolute left-4 right-4 h-1.5 bg-neutral-800 rounded-full border border-neutral-700/50 pointer-events-none overflow-hidden">
-                      <div
-                        className="h-full bg-blue-500"
-                        style={{ width: `${((form.proficiencyLevel - 1) / 4) * 100}%` }}
-                      />
-                    </div>
-                    <input
-                      type="range"
-                      name="proficiencyLevel"
-                      min="1"
-                      max="5"
-                      value={form.proficiencyLevel}
-                      onChange={handleChange}
-                      className="w-full h-6 opacity-0 sm:opacity-100 accent-blue-500 bg-transparent appearance-none cursor-pointer relative z-10"
-                    />
-                  </div>
-                </div>
               </div>
-
-              {/* Form actions */}
-              <div className="flex justify-end gap-2 pt-1 border-t border-border/50 mt-2">
+              {!editingId && (
+                <p className="text-[11.5px] mb-4" style={{ color: "var(--muted-foreground)" }}>
+                  New skills are added as drafts — publish from the list once you're happy with
+                  it.
+                </p>
+              )}
+              <div className="flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="flex items-center gap-1.5 px-4 h-10 border border-border text-muted-foreground hover:text-foreground hover:bg-muted/30 text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+                  className="px-3.5 h-9 rounded-lg text-[12.5px] font-medium"
+                  style={{ color: "var(--muted-foreground)" }}
                 >
-                  <X size={12} />
-                  Abort
+                  Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="flex items-center gap-1.5 px-4 h-10 bg-primary text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer shadow-sm"
+                  className="px-4 h-9 rounded-lg text-[12.5px] font-semibold"
+                  style={{ background: "var(--signal)", color: "var(--background)" }}
                 >
-                  <Check size={12} />
-                  {isSubmitting ? "Syncing..." : editingId ? "Commit Changes" : "Write Record"}
+                  {editingId ? "Save changes" : "Add skill"}
                 </button>
               </div>
-            </form>
-          </motion.div>
+            </div>
+          </motion.form>
         )}
       </AnimatePresence>
 
-      {/* Skills Streams Overhauled Layout with Fallback Color Line Metrics */}
-      {skills.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-border rounded-xl bg-card select-none">
-          <p className="text-[11px] font-mono text-muted-foreground/50 italic">
-            Zero technology array nodes detected inside matrix.
-          </p>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <StatusTabs value={statusFilter} onChange={setStatusFilter} />
+        <div className="flex items-center gap-2.5">
+          <div className="relative">
+            <Search
+              size={13}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2"
+              style={{ color: "var(--muted-foreground)" }}
+            />
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search..."
+              className="h-8 pl-7 pr-3 rounded-lg text-[12.5px] outline-none w-40"
+              style={{ border: "1px solid var(--rule)", background: "var(--card)" }}
+            />
+          </div>
+          <select
+            value={categoryFilter}
+            onChange={e => setCategoryFilter(e.target.value)}
+            className="h-8 px-2.5 rounded-lg text-[12.5px] cursor-pointer"
+            style={{ border: "1px solid var(--rule)", background: "var(--card)" }}
+          >
+            <option value="All">All categories</option>
+            {CATEGORIES.map(c => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
         </div>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-24">
+          <div
+            className="w-5 h-5 rounded-full border-2 animate-spin"
+            style={{ borderColor: "var(--rule)", borderTopColor: "var(--signal)" }}
+          />
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={Wrench}
+          title={skills.length === 0 ? "No skills yet" : "Nothing matches this filter"}
+          description={
+            skills.length === 0
+              ? "Add your first skill to see it appear here."
+              : "Try a different search or category."
+          }
+        />
       ) : (
-        <div className="flex flex-col gap-2.5">
-          {skills.map((skill, index) => (
-            <motion.div
+        <div
+          className="rounded-lg overflow-hidden"
+          style={{ border: "1px solid var(--rule)" }}
+        >
+          {/* Column header — this is what makes it read as a table, not cards */}
+          <div
+            className="hidden md:grid grid-cols-[32px_1.6fr_1fr_1fr_auto] items-center gap-4 px-4 h-9 text-[10.5px] font-semibold uppercase tracking-wider"
+            style={{ background: "var(--muted)", color: "var(--muted-foreground)" }}
+          >
+            <span />
+            <span>Name</span>
+            <span>Proficiency</span>
+            <span>Status</span>
+            <span className="text-right pr-1">Actions</span>
+          </div>
+
+          {filtered.map((skill, i) => (
+            <div
               key={skill.id}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.02 }}
-              className="group relative bg-card border border-border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-foreground/10 transition-all duration-150 subpixel-antialiased shadow-sm"
+              className="grid grid-cols-[32px_1fr_auto] md:grid-cols-[32px_1.6fr_1fr_1fr_auto] items-center gap-4 px-4 py-3 transition-colors hover:bg-[var(--muted)]"
+              style={{
+                background: "var(--card)",
+                borderTop: i > 0 ? "1px solid var(--rule)" : "none",
+              }}
             >
-              <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                {/* Structural Category Icon Module */}
-                <div className="w-8 h-8 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0 text-muted-foreground/70 group-hover:text-blue-400 group-hover:border-blue-500/30 transition-colors select-none">
-                  {getCategoryIcon(skill.category)}
-                </div>
-
-                <div className="min-w-0 flex-1 grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4 items-center">
-                  {/* Left Column: Core Meta Data */}
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-xs font-bold text-white tracking-wide truncate">
-                        {skill.name}
-                      </h3>
-                      <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-neutral-900 text-neutral-400 border border-neutral-800 select-none">
-                        {skill.category}
-                      </span>
-                    </div>
-                    <div className="text-[9px] font-mono text-muted-foreground/40 mt-1 select-none">
-                      SEQ_IDX: {skill.orderIndex}
-                    </div>
-                  </div>
-
-                  {/* Right Column: Fallback Safe High-Contrast Line Tracking Indicator */}
-                  <div className="flex items-center gap-4 select-none min-w-[160px]">
-                    <div className="relative flex-1 h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
-                      {/* Using safe high-contrast fallback color utilities */}
-                      <div
-                        className="absolute left-0 top-0 h-full bg-blue-500 rounded-full transition-all duration-300"
-                        style={{ width: `${(skill.proficiencyLevel / 5) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] font-mono font-bold text-white bg-neutral-900 border border-neutral-800 px-1.5 py-0.5 rounded min-w-[32px] text-center shadow-sm">
-                      {skill.proficiencyLevel}/5
-                    </span>
-                  </div>
-                </div>
+              <div className="flex flex-col items-center gap-0.5">
+                <button
+                  onClick={() => handleMove(skill, -1)}
+                  disabled={i === 0}
+                  className="disabled:opacity-20"
+                  style={{ color: "var(--muted-foreground)" }}
+                  aria-label="Move up"
+                >
+                  <ChevronUp size={13} />
+                </button>
+                <button
+                  onClick={() => handleMove(skill, 1)}
+                  disabled={i === filtered.length - 1}
+                  className="disabled:opacity-20"
+                  style={{ color: "var(--muted-foreground)" }}
+                  aria-label="Move down"
+                >
+                  <ChevronDown size={13} />
+                </button>
               </div>
 
-              {/* Action Interface Controls Array */}
-              <div className="flex items-center justify-end gap-1 shrink-0 select-none border-t sm:border-t-0 border-border/30 pt-2 sm:pt-0">
+              <div className="min-w-0">
+                <p className="text-[13.5px] font-semibold truncate">{skill.name}</p>
+                <p className="text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>
+                  {skill.category}
+                </p>
+              </div>
+
+              <ProficiencyDots
+                level={skill.proficiencyLevel}
+                onChange={n => handleProficiencyChange(skill, n)}
+              />
+
+              <PublishBadge
+                status={skill.status}
+                scheduledAt={skill.scheduledAt}
+                publishedAt={skill.publishedAt}
+              />
+
+              <div className="flex items-center justify-end gap-0.5">
+                <PublishMenu
+                  status={skill.status}
+                  onAction={(action, payload) => handleTransition(skill, action, payload)}
+                />
                 <button
                   onClick={() => handleEdit(skill)}
-                  className="p-1.5 text-muted-foreground/50 hover:text-white hover:bg-neutral-800 rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 rounded-md hover:bg-[var(--background)]"
+                  style={{ color: "var(--muted-foreground)" }}
                 >
                   <Pencil size={13} />
                 </button>
                 <button
                   onClick={() => handleDelete(skill.id)}
-                  className="p-1.5 text-muted-foreground/50 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 rounded-md hover:bg-[var(--background)]"
+                  style={{ color: "var(--muted-foreground)" }}
                 >
                   <Trash2 size={13} />
                 </button>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       )}
