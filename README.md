@@ -16,10 +16,12 @@ A full-stack developer portfolio with a custom content management system. The pu
   - [Project structure](#project-structure)
   - [Getting started](#getting-started)
   - [Environment variables](#environment-variables)
-  - [The publishing workflow](#the-publishing-workflow)
+  - [Publishing Workflow](#publishing-workflow)
   - [Content modules](#content-modules)
   - [Adding a new content module](#adding-a-new-content-module)
-  - [API reference](#api-reference)
+  - [API Reference](#api-reference)
+    - [Public API](#public-api)
+    - [Admin API](#admin-api)
   - [Design system](#design-system)
   - [Scripts](#scripts)
   - [Deployment](#deployment)
@@ -47,35 +49,39 @@ Both consume the same Express API (`server/`) backed by PostgreSQL via Prisma.
 | Rendering | `react-markdown` + `rehype-highlight` for published posts |
 
 ## Project structure
+
+```text
 ├── client/
 │   └── src/
 │       ├── components/
-│       │   ├── admin/        # Shared Workbench primitives (PageHeader, PublishBadge, TagInput, ...)
-│       │   ├── layout/        # Navbar, Footer, AdminLayout, PageTransition
-│       │   ├── sections/      # Public portfolio sections (Hero, Projects, Skills, ...)
-│       │   └── effects/       # CustomCursor, LoadingScreen
+│       │   ├── admin/        # Shared Workbench primitives
+│       │   ├── layout/
+│       │   ├── sections/
+│       │   └── effects/
 │       ├── pages/
-│       │   ├── admin/         # Workbench pages (one per content module + Dashboard + Login)
-│       │   └── BlogPost.jsx   # Public article reading page
-│       ├── hooks/              # useHero, useProjects, usePublishingActions, useDirtyForm, ...
-│       ├── services/           # api.js (axios instance), publishing.js (lifecycle API factory)
-│       └── context/            # AuthContext, ThemeContext, TransitionContext
+│       │   ├── admin/
+│       │   └── BlogPost.jsx
+│       ├── hooks/
+│       ├── services/
+│       └── context/
 │
 ├── server/
-│   ├── routes/                 # Public routes (read-only, published content only)
-│   │   └── admin/              # Authenticated CRUD + lifecycle routes, one file per module
+│   ├── routes/
+│   │   └── admin/
 │   ├── lib/
 │   │   ├── prisma.js
-│   │   ├── publishing.js       # promoteDueScheduled() — flips due SCHEDULED rows to PUBLISHED
-│   │   ├── publishingRoutes.js # attachPublishingRoutes() / attachReorderRoute() — shared lifecycle routes
-│   │   └── singleton.js        # enforceSingleton() — e.g. only one Experience can be isCurrent
-│   ├── middleware/auth.js      # JWT verification
+│   │   ├── publishing.js
+│   │   ├── publishingRoutes.js
+│   │   └── singleton.js
+│   ├── middleware/
+│   │   └── auth.js
 │   └── prisma/
 │       ├── schema.prisma
 │       ├── migrations/
 │       └── seed.js
 │
 └── README.md
+```
 
 ## Getting started
 
@@ -129,14 +135,20 @@ VITE_GITHUB_USERNAME=your-github-username
 VITE_SITE_URL=http://localhost:5173
 ```
 
-## The publishing workflow
+## Publishing Workflow
 
-Every content module — Projects, Skills, Experience, Certifications, Blog, Testimonials — shares one lifecycle rather than each inventing its own draft/live logic.
-DRAFT ──publish──> PUBLISHED ──unpublish──> DRAFT
-│                    │
-└──schedule──> SCHEDULED ──(time arrives)──> PUBLISHED
-│
-PUBLISHED ──archive──> ARCHIVED ──unpublish──> DRAFT
+```text
+                publish
+DRAFT ─────────────────────────► PUBLISHED
+  │                                │
+  │ schedule                       │ archive
+  ▼                                ▼
+SCHEDULED ──(scheduled time)──► PUBLISHED ─────► ARCHIVED
+                                      │
+                                      │ unpublish
+                                      ▼
+                                   DRAFT
+```
 
 - **`status`** (`ContentStatus` enum: `DRAFT | SCHEDULED | PUBLISHED | ARCHIVED`) — the current lifecycle state.
 - **`publishedAt`** — when a record *first* went live. Preserved across unpublish/republish, so "on the site since March" stays true even after a later draft edit.
@@ -173,34 +185,102 @@ This is the fast path, assuming the module needs the full publishing lifecycle:
 4. **Admin UI** — reuse `PageHeader`, `EmptyState`, `StatusTabs`, `PublishBadge`, `PublishMenu`, and `createPublishingApi()` / `usePublishingActions()` from `client/src/services/publishing.js` and `client/src/hooks/usePublishingActions.js`. Design the list layout around what the content actually is (a table for tabular data, a badge-led list for credentials, a chronological log for a timeline) rather than copying another module's layout wholesale.
 5. **Navigation** — add the module to **both** `NAV_GROUPS` in `AdminLayout.jsx` and `CONTENT_LINKS` in `Dashboard.jsx`. These are currently two independently-maintained lists — a module can have a working route and still be invisible in the sidebar if it's missing from `NAV_GROUPS`. This has happened twice already (Hero, Stats). If adding a third module and this bites again, it's worth deriving both lists from one shared `ADMIN_MODULES` array instead of continuing to maintain them by hand.
 
-## API reference
+## API Reference
 
-**Public** (read-only, published content only):
-GET  /api/hero
-GET  /api/projects            GET /api/projects/:id
-GET  /api/skills
-GET  /api/experiences
-GET  /api/certifications
-GET  /api/testimonials
-GET  /api/stats
-GET  /api/blog                GET /api/blog/:slug
-GET  /api/github/pinned       GET /api/github/contributions
-POST /api/contact
+### Public API
+_Read-only. Only returns content with `status = PUBLISHED`._
 
-**Admin** (JWT-protected via httpOnly cookie):
-POST /api/auth/login           POST /api/auth/logout          GET /api/auth/me
-PATCH /api/admin/hero
-GET/POST /api/admin/<module>              module ∈ {projects, skills, experiences,
-PATCH/DELETE /api/admin/<module>/:id        certifications, testimonials, blog}
-PATCH /api/admin/<module>/:id/publish
-PATCH /api/admin/<module>/:id/unpublish
-PATCH /api/admin/<module>/:id/schedule     { scheduledAt }
-PATCH /api/admin/<module>/:id/archive
-PATCH /api/admin/<module>/reorder          { items: [{ id, orderIndex }] }
-GET/POST/PATCH/DELETE /api/admin/stats/:id
-GET/PATCH/DELETE       /api/admin/messages/:id
-POST  /api/admin/github/sync
-GET   /api/admin/github/sync-status
+```text
+GET    /api/hero
+
+GET    /api/projects
+GET    /api/projects/:id
+
+GET    /api/skills
+GET    /api/experiences
+GET    /api/certifications
+GET    /api/testimonials
+GET    /api/stats
+
+GET    /api/blog
+GET    /api/blog/:slug
+
+GET    /api/github/pinned
+GET    /api/github/contributions
+
+POST   /api/contact
+```
+
+### Admin API
+_Protected via JWT authentication (httpOnly cookie)._
+
+```text
+Authentication
+────────────────────────────────────────────────────────────
+POST   /api/auth/login
+POST   /api/auth/logout
+GET    /api/auth/me
+
+Hero
+────────────────────────────────────────────────────────────
+PATCH  /api/admin/hero
+
+Content Modules
+────────────────────────────────────────────────────────────
+Modules:
+projects
+skills
+experiences
+certifications
+testimonials
+blog
+
+GET    /api/admin/<module>
+POST   /api/admin/<module>
+
+PATCH  /api/admin/<module>/:id
+DELETE /api/admin/<module>/:id
+
+PATCH  /api/admin/<module>/:id/publish
+PATCH  /api/admin/<module>/:id/unpublish
+PATCH  /api/admin/<module>/:id/schedule
+        Body:
+        {
+          "scheduledAt": "ISO Date"
+        }
+
+PATCH  /api/admin/<module>/:id/archive
+
+PATCH  /api/admin/<module>/reorder
+        Body:
+        {
+          "items": [
+            {
+              "id": 1,
+              "orderIndex": 0
+            }
+          ]
+        }
+
+Stats
+────────────────────────────────────────────────────────────
+GET    /api/admin/stats
+POST   /api/admin/stats
+PATCH  /api/admin/stats/:id
+DELETE /api/admin/stats/:id
+
+Messages
+────────────────────────────────────────────────────────────
+GET    /api/admin/messages
+GET    /api/admin/messages/:id
+PATCH  /api/admin/messages/:id
+DELETE /api/admin/messages/:id
+
+GitHub
+────────────────────────────────────────────────────────────
+POST   /api/admin/github/sync
+GET    /api/admin/github/sync-status
+```
 
 ## Design system
 
