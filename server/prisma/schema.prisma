@@ -23,8 +23,14 @@ model AdminUser {
   updatedProjects       Project[]       @relation("ProjectUpdatedBy")
   createdSkills         Skill[]         @relation("SkillCreatedBy")
   updatedSkills         Skill[]         @relation("SkillUpdatedBy")
+  createdExperiences    Experience[]    @relation("ExperienceCreatedBy")
+  updatedExperiences    Experience[]    @relation("ExperienceUpdatedBy")
   createdCertifications Certification[] @relation("CertificationCreatedBy")
   updatedCertifications Certification[] @relation("CertificationUpdatedBy")
+  createdBlogPosts      BlogPost[]      @relation("BlogPostCreatedBy")
+  updatedBlogPosts      BlogPost[]      @relation("BlogPostUpdatedBy")
+  createdTestimonials   Testimonial[]   @relation("TestimonialCreatedBy")
+  updatedTestimonials   Testimonial[]   @relation("TestimonialUpdatedBy")
 
   @@map("admin_users")
 }
@@ -108,6 +114,18 @@ model Experience {
   isCurrent   Boolean   @default(false)
   orderIndex  Int       @default(0)
 
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  archivedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
+
+  createdById Int?
+  updatedById Int?
+  createdBy   AdminUser? @relation("ExperienceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   AdminUser? @relation("ExperienceUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
   @@map("experiences")
 }
 
@@ -143,22 +161,42 @@ model Testimonial {
   avatarUrl  String?
   quote      String
   orderIndex Int     @default(0)
-  visible    Boolean @default(true)
+
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  archivedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
+
+  createdById Int?
+  updatedById Int?
+  createdBy   AdminUser? @relation("TestimonialCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   AdminUser? @relation("TestimonialUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@map("testimonials")
 }
 
 model BlogPost {
-  id            Int       @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   title         String
-  slug          String    @unique
+  slug          String   @unique
   content       String
   excerpt       String?
   coverImageUrl String?
   tags          String[]
-  published     Boolean   @default(false)
-  publishedAt   DateTime?
-  updatedAt     DateTime  @updatedAt
+
+  status      ContentStatus @default(DRAFT)
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  archivedAt  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @default(now()) @updatedAt
+
+  createdById Int?
+  updatedById Int?
+  createdBy   AdminUser? @relation("BlogPostCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy   AdminUser? @relation("BlogPostUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
   @@map("blog_posts")
 }

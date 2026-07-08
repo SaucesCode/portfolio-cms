@@ -1,32 +1,255 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-import { Check, Plus, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Check,
+  Plus,
+  X,
+  GripVertical,
+  User as UserIcon,
+  FileText,
+  ImageIcon,
+} from "lucide-react";
 import { toast } from "react-toastify";
 import api from "../../services/api";
+import PageHeader from "../../components/admin/PageHeader";
+import { useDirtyForm } from "../../hooks/useDirtyForm";
+
+const emptyHero = {
+  name: "",
+  bio: "",
+  tagline: [],
+  profileImageUrl: "",
+  resumeUrl: "",
+  availableForWork: true,
+};
+
+function SectionCard({ icon: Icon, title, description, children }) {
+  return (
+    <div
+      className="rounded-lg p-5"
+      style={{ border: "1px solid var(--rule)", background: "var(--card)" }}
+    >
+      <div className="flex items-start gap-2.5 mb-5">
+        <div
+          className="flex items-center justify-center w-7 h-7 rounded-md shrink-0"
+          style={{ background: "var(--muted)", color: "var(--muted-foreground)" }}
+        >
+          <Icon size={14} />
+        </div>
+        <div>
+          <h2 className="text-[13.5px] font-semibold">{title}</h2>
+          {description && (
+            <p className="text-[12px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+              {description}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-col gap-4">{children}</div>
+    </div>
+  );
+}
+
+function Field({ label, hint, children }) {
+  return (
+    <div>
+      <label className="block text-[12.5px] font-medium mb-1.5">{label}</label>
+      {children}
+      {hint && (
+        <p className="text-[11.5px] mt-1.5" style={{ color: "var(--muted-foreground)" }}>
+          {hint}
+        </p>
+      )}
+    </div>
+  );
+}
+
+const inputClass = "w-full px-3 h-10 rounded-lg text-[13px] outline-none transition-colors";
+const inputStyle = { border: "1px solid var(--rule)", background: "var(--background)" };
+
+/* ── Tagline editor — each line is a real editable row, reorderable, keyboard-first ── */
+function TaglineEditor({ taglines, onChange }) {
+  const draftRef = useRef(null);
+
+  const updateAt = (i, val) => {
+    const next = [...taglines];
+    next[i] = val;
+    onChange(next);
+  };
+
+  const removeAt = i => onChange(taglines.filter((_, idx) => idx !== i));
+
+  const addOne = () => {
+    onChange([...taglines, ""]);
+    requestAnimationFrame(() => draftRef.current?.focus());
+  };
+
+  const move = (i, dir) => {
+    const j = i + dir;
+    if (j < 0 || j >= taglines.length) return;
+    const next = [...taglines];
+    [next[i], next[j]] = [next[j], next[i]];
+    onChange(next);
+  };
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <AnimatePresence initial={false}>
+        {taglines.map((tag, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.15 }}
+            className="flex items-center gap-1.5 overflow-hidden"
+          >
+            <div
+              className="flex flex-col shrink-0"
+              style={{ color: "var(--muted-foreground)" }}
+            >
+              <button
+                type="button"
+                onClick={() => move(i, -1)}
+                disabled={i === 0}
+                className="disabled:opacity-20"
+                aria-label="Move up"
+              >
+                <GripVertical size={13} />
+              </button>
+            </div>
+            <input
+              ref={i === taglines.length - 1 ? draftRef : undefined}
+              value={tag}
+              onChange={e => updateAt(i, e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addOne();
+                }
+              }}
+              placeholder="e.g. Full-Stack Developer"
+              className={`${inputClass} flex-1`}
+              style={inputStyle}
+            />
+            <button
+              type="button"
+              onClick={() => removeAt(i)}
+              className="p-1.5 rounded-md hover:bg-[var(--muted)] shrink-0"
+              style={{ color: "var(--muted-foreground)" }}
+              aria-label="Remove tagline"
+            >
+              <X size={13} />
+            </button>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      <button
+        type="button"
+        onClick={addOne}
+        className="flex items-center gap-1.5 mt-1 px-3 h-9 rounded-lg text-[12.5px] font-medium self-start transition-colors hover:bg-[var(--muted)]"
+        style={{ border: "1px dashed var(--rule)", color: "var(--muted-foreground)" }}
+      >
+        <Plus size={13} />
+        Add tagline
+      </button>
+      <p className="text-[11.5px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+        These rotate in the Hero's typewriter effect, in this order. Press Enter to add
+        another.
+      </p>
+    </div>
+  );
+}
+
+/* ── Compact live preview — approximates the real Hero, not pixel-perfect ── */
+function HeroPreview({ hero }) {
+  const taglines = hero.tagline.filter(Boolean);
+  return (
+    <div className="rounded-lg overflow-hidden" style={{ border: "1px solid var(--rule)" }}>
+      <div
+        className="px-4 h-9 flex items-center text-[11px] font-medium"
+        style={{ background: "var(--muted)", color: "var(--muted-foreground)" }}
+      >
+        Preview — public Hero section
+      </div>
+      <div className="p-6" style={{ background: "#121316" }}>
+        <div className="grid grid-cols-[1fr_auto] gap-5 items-start">
+          <div className="min-w-0">
+            {hero.availableForWork && (
+              <div
+                className="inline-flex items-center gap-1.5 mb-3 px-2 h-5 rounded-full"
+                style={{ border: "1px solid #2a2b2f" }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#c99a4d" }} />
+                <span className="text-[9px] font-semibold" style={{ color: "#c99a4d" }}>
+                  Available
+                </span>
+              </div>
+            )}
+            <h3
+              className="font-black leading-[0.98] tracking-tight text-[#ecebe5]"
+              style={{ fontSize: "22px" }}
+            >
+              {hero.name || "Your name"}
+            </h3>
+            <p
+              className="mt-2 text-[11px] leading-relaxed line-clamp-3"
+              style={{ color: "#8c8b84" }}
+            >
+              {hero.bio ||
+                "Your bio will appear here — a short description visitors see first."}
+            </p>
+            <p className="mt-3 text-[10.5px] font-mono truncate" style={{ color: "#5a6bc4" }}>
+              {taglines[0] || "your tagline here"}
+            </p>
+          </div>
+          <div
+            className="w-16 h-20 rounded overflow-hidden shrink-0"
+            style={{ background: "#1c1d21", border: "1px solid #2a2b2f" }}
+          >
+            {hero.profileImageUrl ? (
+              <img
+                src={hero.profileImageUrl}
+                alt=""
+                className="w-full h-full object-cover"
+                onError={e => (e.target.style.display = "none")}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <UserIcon size={16} style={{ color: "#63625b" }} />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ManageHero() {
   const queryClient = useQueryClient();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newTagline, setNewTagline] = useState("");
-  const [form, setForm] = useState({
-    name: "",
-    bio: "",
-    tagline: [],
-    profileImageUrl: "",
-    resumeUrl: "",
-    availableForWork: true,
-  });
+  const {
+    value: form,
+    setValue: setForm,
+    isDirty,
+    markSaved,
+    reset,
+  } = useDirtyForm(emptyHero);
+  const update = patch => setForm(prev => ({ ...prev, ...patch }));
+
+  const [saveState, setSaveState] = useState("idle"); // idle | saving | saved
+  function useSaveState() {} // placeholder removed below — see note
 
   const { data: hero, isLoading } = useQuery({
     queryKey: ["hero"],
     queryFn: () => api.get("/hero").then(res => res.data),
   });
 
-  // Pre-fill form when hero data loads
   useEffect(() => {
     if (hero) {
-      setForm({
+      reset({
         name: hero.name || "",
         bio: hero.bio || "",
         tagline: hero.tagline || [],
@@ -35,321 +258,220 @@ export default function ManageHero() {
         availableForWork: hero.availableForWork ?? true,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hero]);
 
-  const handleChange = e => {
-    const { name, value, type, checked } = e.target;
-    setForm(prev => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  // Add a new tagline string to the array
-  const handleAddTagline = () => {
-    if (!newTagline.trim()) return;
-    setForm(prev => ({
-      ...prev,
-      tagline: [...prev.tagline, newTagline.trim()],
-    }));
-    setNewTagline("");
-  };
-
-  // Remove a tagline by its index
-  const handleRemoveTagline = index => {
-    setForm(prev => ({
-      ...prev,
-      tagline: prev.tagline.filter((_, i) => i !== index),
-    }));
-  };
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async e => {
     e.preventDefault();
-
     if (!form.name.trim()) {
       toast.error("Name is required");
       return;
     }
-
-    setIsSubmitting(true);
+    setIsSaving(true);
     try {
-      await api.patch("/admin/hero", form);
+      await api.patch("/admin/hero", { ...form, tagline: form.tagline.filter(t => t.trim()) });
       toast.success("Hero section updated");
-
-      // Invalidate both admin and public hero cache
+      markSaved();
       queryClient.invalidateQueries({ queryKey: ["hero"] });
-    } catch (error) {
-      toast.error("Something went wrong");
+    } catch {
+      toast.error("Something went wrong — try again");
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
 
-  const inputClass = `
-    w-full px-3 h-10 rounded-lg text-[11px] font-mono tracking-wide
-    bg-background border border-border
-    text-foreground placeholder:text-muted-foreground/40
-    focus:outline-none focus:border-foreground/20 focus:ring-1 focus:ring-foreground/10
-    transition-all duration-150
-  `;
-
-  if (isLoading)
+  if (isLoading) {
     return (
-      <div className="flex justify-center py-24 select-none">
-        <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      <div className="flex justify-center py-24">
+        <div
+          className="w-5 h-5 rounded-full border-2 animate-spin"
+          style={{ borderColor: "var(--rule)", borderTopColor: "var(--signal)" }}
+        />
       </div>
     );
+  }
 
   return (
-    <div className="w-full selection:bg-primary/10 selection:text-primary">
-      {/* Page header */}
-      <div className="mb-6 select-none">
-        <h1 className="text-xs font-black uppercase tracking-[0.25em] text-foreground mb-1">
-          Hero Parameters
-        </h1>
-        <p className="text-[11px] font-mono text-muted-foreground">
-          Mutate operational branding context identity configuration properties
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit}>
-        <div className="flex flex-col gap-5">
-          {/* Basic info card */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-card border border-border rounded-xl p-5 subpixel-antialiased shadow-sm"
-          >
-            <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4 border-b border-border/50 pb-2">
-              Identity Metadata
-            </h2>
-
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
-                  Core Operator Name
-                </label>
-                <input
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  placeholder="Your full name"
-                  className={inputClass}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
-                  Executive Brief Bio
-                </label>
-                <textarea
-                  name="bio"
-                  value={form.bio}
-                  onChange={handleChange}
-                  placeholder="A short description about yourself"
-                  rows={4}
-                  className={`${inputClass} h-auto py-2.5 resize-none leading-relaxed font-sans text-xs`}
-                />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Taglines card */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.04 }}
-            className="bg-card border border-border rounded-xl p-5 subpixel-antialiased shadow-sm"
-          >
-            <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-1">
-              Dynamic Stream Arrays
-            </h2>
-            <p className="text-[10px] font-mono text-muted-foreground/70 mb-4 pb-2 border-b border-border/50">
-              Iterative character compilation arrays parsed via terminal effect pipelines
-            </p>
-
-            {/* Existing taglines */}
-            <div className="flex flex-col gap-1.5 mb-4">
-              {form.tagline.length === 0 && (
-                <p className="text-[10px] font-mono text-muted-foreground/50 italic px-1 py-1">
-                  No vectors stored inside layout array stack
-                </p>
+    <form onSubmit={handleSubmit}>
+      <PageHeader
+        eyebrow="Singleton · Public profile"
+        title="Hero"
+        description="What visitors see first, at the top of your portfolio."
+        action={
+          <div className="flex items-center gap-3">
+            <span className="text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>
+              {isDirty ? (
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{ background: "var(--signal-warm, var(--signal))" }}
+                  />
+                  Unsaved changes
+                </span>
+              ) : (
+                "All changes saved"
               )}
-              {form.tagline.map((tag, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between px-3 h-9 rounded-lg bg-muted/40 border border-border/60 group"
-                >
-                  <span className="text-[11px] font-mono text-foreground tracking-wide truncate pr-4">
-                    {tag}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveTagline(index)}
-                    className="p-1 -mr-1 text-muted-foreground/40 hover:text-destructive transition-colors cursor-pointer"
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Add new tagline */}
-            <div className="flex gap-2">
-              <input
-                value={newTagline}
-                onChange={e => setNewTagline(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleAddTagline();
-                  }
-                }}
-                placeholder="e.g. Full-Stack Developer"
-                className={inputClass}
-              />
-              <button
-                type="button"
-                onClick={handleAddTagline}
-                className="flex items-center gap-1.5 px-3.5 h-10 bg-muted border border-border hover:bg-muted/80 text-foreground text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors whitespace-nowrap cursor-pointer"
-              >
-                <Plus size={12} />
-                Append
-              </button>
-            </div>
-          </motion.div>
-
-          {/* Links card */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.08 }}
-            className="bg-card border border-border rounded-xl p-5 subpixel-antialiased shadow-sm"
-          >
-            <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4 border-b border-border/50 pb-2">
-              Resource Network Targets
-            </h2>
-
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
-                  Static Avatar Frame URI
-                </label>
-                <input
-                  name="profileImageUrl"
-                  value={form.profileImageUrl}
-                  onChange={handleChange}
-                  placeholder="https://example.com/photo.jpg"
-                  className={inputClass}
-                />
-                {/* Live preview */}
-                {form.profileImageUrl && (
-                  <div className="flex items-center gap-2.5 mt-2 px-1 select-none">
-                    <img
-                      src={form.profileImageUrl}
-                      alt="Preview"
-                      className="w-8 h-8 rounded-lg object-cover border border-border bg-muted/50"
-                      onError={e => (e.target.style.display = "none")}
-                    />
-                    <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60">
-                      Asset Frame Stream Match
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.12em] px-0.5">
-                  Secure File Manifest URI (Resume)
-                </label>
-                <input
-                  name="resumeUrl"
-                  value={form.resumeUrl}
-                  onChange={handleChange}
-                  placeholder="https://example.com/resume.pdf"
-                  className={inputClass}
-                />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Availability card */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.12 }}
-            className="bg-card border border-border rounded-xl p-5 subpixel-antialiased shadow-sm"
-          >
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0 flex-1 select-none">
-                <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-0.5">
-                  Pipeline Telemetry Broadcast
-                </h2>
-                <p className="text-[10px] font-mono text-muted-foreground/70">
-                  Global system availability pulsing telemetry visual notification target nodes
-                </p>
-              </div>
-
-              {/* Toggle switch */}
-              <button
-                type="button"
-                onClick={() =>
-                  setForm(prev => ({
-                    ...prev,
-                    availableForWork: !prev.availableForWork,
-                  }))
-                }
-                className={`relative w-9 h-5 rounded-full transition-colors duration-150 shrink-0 cursor-pointer border border-transparent
-                  ${form.availableForWork ? "bg-primary" : "bg-muted border-border"}`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-transform duration-150
-                  ${form.availableForWork ? "translate-x-4 bg-primary-foreground" : "translate-x-0"}`}
-                />
-              </button>
-            </div>
-
-            {/* Status indicator */}
-            {form.availableForWork && (
-              <div className="flex items-center gap-2 mt-4 px-3 h-8 rounded-lg bg-foreground/[0.02] border border-border/80 select-none">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-60" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
-                </span>
-                <span className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
-                  Active connection beacon running on core cluster layout
-                </span>
-              </div>
-            )}
-          </motion.div>
-
-          {/* Save button */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.16 }}
-            className="flex justify-end pt-1"
-          >
+            </span>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 h-10 bg-primary text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors border border-transparent hover:bg-primary/90 cursor-pointer shadow-sm"
+              disabled={isSaving || !isDirty}
+              className="flex items-center gap-1.5 px-4 h-9 rounded-lg text-[12.5px] font-semibold transition-opacity disabled:opacity-50"
+              style={{ background: "var(--signal)", color: "var(--background)" }}
             >
-              {isSubmitting ? (
+              {isSaving ? (
                 <>
-                  <div className="w-3.5 h-3.5 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" />
-                  <span>Syncing Pipeline...</span>
+                  <span
+                    className="w-3 h-3 rounded-full border-2 animate-spin"
+                    style={{
+                      borderColor: "color-mix(in oklch, var(--background) 40%, transparent)",
+                      borderTopColor: "var(--background)",
+                    }}
+                  />
+                  Saving...
                 </>
               ) : (
                 <>
                   <Check size={13} />
-                  <span>Commit Transmit</span>
+                  Save changes
                 </>
               )}
             </button>
-          </motion.div>
+          </div>
+        }
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
+        {/* Left — the editable sections */}
+        <div className="flex flex-col gap-5">
+          <SectionCard
+            icon={UserIcon}
+            title="Identity"
+            description="Your name and current availability signal."
+          >
+            <Field label="Name">
+              <input
+                value={form.name}
+                onChange={e => update({ name: e.target.value })}
+                placeholder="Your full name"
+                className={inputClass}
+                style={inputStyle}
+              />
+            </Field>
+            <div
+              className="flex items-center justify-between gap-4 px-3.5 h-11 rounded-lg"
+              style={{ border: "1px solid var(--rule)" }}
+            >
+              <div>
+                <p className="text-[13px] font-medium">Available for work</p>
+                <p className="text-[11.5px]" style={{ color: "var(--muted-foreground)" }}>
+                  Shows a pulsing badge in your nav and Hero.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => update({ availableForWork: !form.availableForWork })}
+                className="relative w-9 h-5 rounded-full shrink-0 transition-colors"
+                style={{
+                  background: form.availableForWork ? "var(--signal)" : "var(--muted)",
+                }}
+              >
+                <span
+                  className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform"
+                  style={{
+                    background: "var(--background)",
+                    transform: form.availableForWork ? "translateX(16px)" : "translateX(0)",
+                  }}
+                />
+              </button>
+            </div>
+          </SectionCard>
+
+          <SectionCard
+            icon={FileText}
+            title="Hero copy"
+            description="The taglines that rotate, and the bio underneath your name."
+          >
+            <Field label="Taglines">
+              <TaglineEditor taglines={form.tagline} onChange={v => update({ tagline: v })} />
+            </Field>
+            <Field
+              label="Bio"
+              hint="A few sentences — this is the first thing visitors read about you."
+            >
+              <textarea
+                value={form.bio}
+                onChange={e => update({ bio: e.target.value })}
+                placeholder="I build fast, beautiful web apps that solve real problems..."
+                rows={4}
+                className={`${inputClass} h-auto py-2.5 resize-none leading-relaxed`}
+                style={inputStyle}
+              />
+            </Field>
+          </SectionCard>
+
+          <SectionCard
+            icon={ImageIcon}
+            title="Assets"
+            description="Your profile photo and downloadable résumé."
+          >
+            <Field label="Profile image">
+              <div className="flex gap-4">
+                <div
+                  className="relative shrink-0 rounded-lg overflow-hidden flex items-center justify-center"
+                  style={{
+                    width: 96,
+                    height: 120,
+                    background: "var(--muted)",
+                    border: "1px dashed var(--rule)",
+                  }}
+                >
+                  {form.profileImageUrl ? (
+                    <img
+                      src={form.profileImageUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      onError={e => (e.target.style.display = "none")}
+                    />
+                  ) : (
+                    <UserIcon size={20} style={{ color: "var(--muted-foreground)" }} />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input
+                    value={form.profileImageUrl}
+                    onChange={e => update({ profileImageUrl: e.target.value })}
+                    placeholder="https://example.com/photo.jpg"
+                    className={inputClass}
+                    style={inputStyle}
+                  />
+                  <p
+                    className="text-[11.5px] mt-1.5"
+                    style={{ color: "var(--muted-foreground)" }}
+                  >
+                    Shown at 4:5 in your Hero section's photo plate.
+                  </p>
+                </div>
+              </div>
+            </Field>
+            <Field label="Résumé URL">
+              <input
+                value={form.resumeUrl}
+                onChange={e => update({ resumeUrl: e.target.value })}
+                placeholder="https://example.com/resume.pdf"
+                className={inputClass}
+                style={inputStyle}
+              />
+            </Field>
+          </SectionCard>
         </div>
-      </form>
-    </div>
+
+        {/* Right — sticky live preview */}
+        <div className="hidden lg:block sticky top-8 self-start">
+          <HeroPreview hero={form} />
+        </div>
+      </div>
+    </form>
   );
 }

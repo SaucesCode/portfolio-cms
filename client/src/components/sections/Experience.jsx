@@ -69,7 +69,7 @@ function NowBlock({ exp }) {
               color: "var(--signal)",
             }}
           >
-            at {exp.company}
+            {exp.company}
           </p>
         </div>
 

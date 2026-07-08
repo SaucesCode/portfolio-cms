@@ -17,6 +17,7 @@ function useGreeting() {
 }
 
 const CONTENT_LINKS = [
+  { label: "Hero", href: "/admin/hero", key: "hero" },
   { label: "Projects", href: "/admin/projects", key: "projects" },
   { label: "Skills", href: "/admin/skills", key: "skills" },
   { label: "Experience", href: "/admin/experience", key: "experience" },
@@ -66,6 +67,7 @@ export default function Dashboard() {
   });
 
   const counts = {
+    hero: hero ? 1 : 0,
     projects: projects.length,
     skills: skills.length,
     experience: experiences.length,

@@ -151,10 +151,39 @@ function SkillsTab({ skills }) {
   );
 }
 
-/* ── CertsTab — lightly reskinned to the new tokens for now ───── */
+/* ── CertsTab — badge-led rows, editorial not card-grid ───────── */
 function formatDate(d) {
   if (!d) return "";
   return new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
+function CertBadge({ cert }) {
+  const [errored, setErrored] = useState(false);
+  const hasImage = cert.badgeImageUrl && !errored;
+
+  return (
+    <div
+      className="relative shrink-0 rounded-lg overflow-hidden flex items-center justify-center transition-transform duration-300 ease-out group-hover:scale-105 group-hover:-translate-y-0.5"
+      style={{
+        width: 44,
+        height: 44,
+        background: "var(--muted)",
+        border: "1px solid var(--rule)",
+      }}
+    >
+      {hasImage ? (
+        <img
+          src={cert.badgeImageUrl}
+          alt=""
+          loading="lazy"
+          onError={() => setErrored(true)}
+          className="w-full h-full object-contain p-1.5"
+        />
+      ) : (
+        <Award size={16} style={{ color: "var(--muted-foreground)" }} />
+      )}
+    </div>
+  );
 }
 
 function CertsTab({ certifications }) {
@@ -169,34 +198,31 @@ function CertsTab({ certifications }) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.05 }}
-          className="group flex items-center justify-between gap-6 py-5 border-b transition-colors"
-          style={{ borderColor: "var(--rule)" }}
+          className="group flex items-center gap-4 py-5 border-b transition-colors"
+          style={{
+            borderColor: "var(--rule)",
+            cursor: cert.credentialUrl ? "pointer" : "default",
+          }}
         >
-          <div className="flex items-center gap-4 min-w-0">
-            <Award
-              size={16}
-              style={{ color: "var(--muted-foreground)" }}
-              className="shrink-0"
-            />
-            <div className="min-w-0">
-              <h3
-                className="text-[14px] font-bold truncate transition-colors"
-                style={{ color: "var(--foreground)" }}
-              >
-                {cert.name}
-              </h3>
-              <p
-                className="mono-label text-[11px] mt-0.5"
-                style={{ color: "var(--muted-foreground)" }}
-              >
-                {cert.issuer} · {formatDate(cert.issueDate)}
-              </p>
-            </div>
+          {/* Badge — fixed box, object-contain so logos of any aspect ratio sit centered and uncropped */}
+          <CertBadge cert={cert} />
+
+          <div className="min-w-0 flex-1">
+            <h3
+              className="text-[15px] font-bold truncate transition-colors group-hover:opacity-80"
+              style={{ color: "var(--foreground)" }}
+            >
+              {cert.name}
+            </h3>
+            <p className="mono-label text-[11px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
+              {cert.issuer} · {formatDate(cert.issueDate)}
+            </p>
           </div>
+
           {cert.credentialUrl && (
             <ExternalLink
               size={14}
-              className="shrink-0 transition-colors"
+              className="shrink-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
               style={{ color: "var(--muted-foreground)" }}
             />
           )}

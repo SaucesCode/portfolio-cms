@@ -1,12 +1,13 @@
 const express = require("express");
 const prisma = require("../lib/prisma");
+const { promoteDueScheduled } = require("../lib/publishing");
 const router = express.Router();
 
-// Only return visible testimonials to the public
 router.get("/", async (req, res) => {
   try {
+    await promoteDueScheduled(prisma, "testimonial");
     const testimonials = await prisma.testimonial.findMany({
-      where: { visible: true },
+      where: { status: "PUBLISHED" },
       orderBy: { orderIndex: "asc" },
     });
     res.json(testimonials);

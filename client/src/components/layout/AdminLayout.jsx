@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutGrid,
+  User,
   FolderKanban,
   Wrench,
   Briefcase,
@@ -25,6 +26,7 @@ const NAV_GROUPS = [
   {
     label: "Content",
     items: [
+      { label: "Hero", href: "/admin/hero", icon: User },
       { label: "Projects", href: "/admin/projects", icon: FolderKanban },
       { label: "Blog", href: "/admin/blog", icon: Briefcase },
       { label: "Skills", href: "/admin/skills", icon: Wrench },

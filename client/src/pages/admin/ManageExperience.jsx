@@ -1,18 +1,17 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  X,
-  Check,
-  Calendar,
-  BriefcaseBusiness,
-  Building2,
-} from "lucide-react";
+import { Plus, Pencil, Trash2, Briefcase } from "lucide-react";
 import { toast } from "react-toastify";
 import api from "../../services/api";
+import { createPublishingApi } from "../../services/publishing";
+import { usePublishingActions } from "../../hooks/usePublishingActions";
+import PageHeader from "../../components/admin/PageHeader";
+import EmptyState from "../../components/admin/EmptyState";
+import StatusTabs from "../../components/admin/StatusTabs";
+import PublishBadge from "../../components/admin/PublishBadge";
+import PublishMenu from "../../components/admin/PublishMenu";
+import DateRangeField from "../../components/admin/DateRangeField";
 
 const emptyForm = {
   company: "",
@@ -29,9 +28,23 @@ function toInputDate(dateStr) {
   return new Date(dateStr).toISOString().split("T")[0];
 }
 
+function formatMonth(dateStr) {
+  if (!dateStr) return "";
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
+const inputClass = "w-full px-3 h-9 rounded-lg text-[13px] outline-none";
+const inputStyle = { border: "1px solid var(--rule)", background: "var(--background)" };
+
 export default function ManageExperience() {
   const queryClient = useQueryClient();
+  const publishingApi = createPublishingApi("/admin/experiences");
+  const { handleTransition } = usePublishingActions(publishingApi, [
+    ["admin-experiences"],
+    ["experiences"],
+  ]);
 
+  const [statusFilter, setStatusFilter] = useState("All");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -39,21 +52,28 @@ export default function ManageExperience() {
 
   const { data: experiences = [], isLoading } = useQuery({
     queryKey: ["admin-experiences"],
-    queryFn: () => api.get("/admin/experiences").then(res => res.data),
+    queryFn: () => api.get("/admin/experiences").then(r => r.data),
   });
 
-  const handleChange = e => {
-    const { name, value, type, checked } = e.target;
-
-    setForm(prev => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["admin-experiences"] });
+    queryClient.invalidateQueries({ queryKey: ["experiences"] });
   };
+
+  const filtered = useMemo(() => {
+    let list = [...experiences];
+    if (statusFilter !== "All")
+      list = list.filter(e => e.status === statusFilter.toUpperCase());
+    return list; // API already returns current-first, reverse-chronological
+  }, [experiences, statusFilter]);
+
+  const current = filtered.find(e => e.isCurrent);
+  const past = filtered.filter(e => !e.isCurrent);
+
+  const update = patch => setForm(prev => ({ ...prev, ...patch }));
 
   const handleEdit = exp => {
     setEditingId(exp.id);
-
     setForm({
       company: exp.company,
       role: exp.role,
@@ -63,389 +83,388 @@ export default function ManageExperience() {
       isCurrent: exp.isCurrent,
       orderIndex: exp.orderIndex,
     });
-
     setShowForm(true);
   };
 
   const handleCancel = () => {
-    setEditingId(null);
     setShowForm(false);
+    setEditingId(null);
     setForm(emptyForm);
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
+    if (!form.company.trim() || !form.role.trim())
+      return toast.error("Company and role are required");
+    if (!form.startDate) return toast.error("Start date is required");
 
-    if (!form.company.trim() || !form.role.trim()) {
-      toast.error("Company and role are required");
-      return;
-    }
-
-    if (!form.startDate) {
-      toast.error("Start date is required");
-      return;
+    if (form.isCurrent && current && current.id !== editingId) {
+      const proceed = window.confirm(
+        `${current.role} at ${current.company} is currently marked as your current role. Marking this one as current will move that one to your past roles. Continue?`,
+      );
+      if (!proceed) return;
     }
 
     setIsSubmitting(true);
-
     try {
       const payload = {
         ...form,
-        orderIndex: parseInt(form.orderIndex),
+        orderIndex: parseInt(form.orderIndex) || 0,
         endDate: form.isCurrent ? null : form.endDate || null,
       };
-
       if (editingId) {
         await api.patch(`/admin/experiences/${editingId}`, payload);
-        toast.success("Timeline node updated");
+        toast.success("Changes saved");
       } else {
         await api.post("/admin/experiences", payload);
-        toast.success("Timeline node initialized");
+        toast.success("Role added as draft — publish it when ready");
       }
-
-      queryClient.invalidateQueries({
-        queryKey: ["admin-experiences"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["experiences"],
-      });
-
+      invalidate();
       handleCancel();
-    } catch (error) {
-      toast.error("Registry mutation failed");
+    } catch {
+      toast.error("Couldn't save — try again");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async id => {
-    if (!window.confirm("Delete this timeline node?")) return;
-
+    if (!window.confirm("Delete this role? This can't be undone.")) return;
     try {
       await api.delete(`/admin/experiences/${id}`);
-
-      toast.success("Timeline node deleted");
-
-      queryClient.invalidateQueries({
-        queryKey: ["admin-experiences"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["experiences"],
-      });
-    } catch (error) {
-      toast.error("Deletion failed");
+      toast.success("Deleted");
+      invalidate();
+    } catch {
+      toast.error("Couldn't delete — try again");
     }
   };
 
-  function formatDate(dateStr) {
-    if (!dateStr) return "—";
-
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short",
-      year: "numeric",
-    });
-  }
-
-  const inputClass = `
-    w-full px-3 h-10 rounded-lg text-[11px]
-    font-mono tracking-wide
-    bg-background border border-border
-    text-foreground placeholder:text-muted-foreground/40
-    focus:outline-none focus:border-foreground/20
-    focus:ring-1 focus:ring-foreground/10
-    transition-all duration-150
-  `;
-
   if (isLoading) {
     return (
-      <div className="flex justify-center py-24 select-none">
-        <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      <div className="flex justify-center py-24">
+        <div
+          className="w-5 h-5 rounded-full border-2 animate-spin"
+          style={{ borderColor: "var(--rule)", borderTopColor: "var(--signal)" }}
+        />
       </div>
     );
   }
 
   return (
-    <div className="w-full selection:bg-primary/10 selection:text-primary">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 select-none">
-        <div>
-          <h1 className="text-xs font-black uppercase tracking-[0.25em] text-foreground mb-1">
-            Career Timeline
-          </h1>
+    <div>
+      <PageHeader
+        eyebrow={`${experiences.length} total`}
+        title="Experience"
+        description="Your career timeline, shown reverse-chronologically — current role always leads. Ties break by sort position, not manual drag."
+        action={
+          !showForm && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="flex items-center gap-1.5 px-3.5 h-9 rounded-lg text-[12.5px] font-semibold transition-opacity hover:opacity-90"
+              style={{ background: "var(--signal)", color: "var(--background)" }}
+            >
+              <Plus size={14} />
+              New role
+            </button>
+          )
+        }
+      />
 
-          <p className="text-[11px] font-mono text-muted-foreground">
-            Workforce history registry contains ({experiences.length}) timeline nodes
-          </p>
-        </div>
-
-        {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-3.5 h-10 bg-primary text-primary-foreground text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors hover:bg-primary/90 cursor-pointer shadow-sm"
-          >
-            <Plus size={12} />
-            Initialize Node
-          </button>
-        )}
-      </div>
-
-      {/* Form */}
       <AnimatePresence>
         {showForm && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            className="bg-card border border-border rounded-xl p-5 subpixel-antialiased shadow-sm mb-5"
+          <motion.form
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            onSubmit={handleSubmit}
+            className="overflow-hidden mb-6"
           >
-            <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.15em] mb-4 border-b border-border/50 pb-2">
-              {editingId ? "Edit Workforce Registry" : "Initialize Workforce Registry"}
-            </h2>
+            <div
+              className="p-5 rounded-lg mb-1"
+              style={{ border: "1px solid var(--rule)", background: "var(--card)" }}
+            >
+              <p className="text-[13px] font-semibold mb-5">
+                {editingId ? "Edit role" : "New role"}
+              </p>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Company */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-0.5">
-                    Organization Identity
-                  </label>
-
-                  <input
-                    name="company"
-                    value={form.company}
-                    onChange={handleChange}
-                    placeholder="e.g. Tech Startup PH"
-                    className={inputClass}
-                  />
-                </div>
-
-                {/* Role */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-0.5">
-                    Position Vector
-                  </label>
-
-                  <input
-                    name="role"
-                    value={form.role}
-                    onChange={handleChange}
-                    placeholder="Frontend Developer"
-                    className={inputClass}
-                  />
-                </div>
-
-                {/* Start date */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-0.5">
-                    Initialization Timestamp
-                  </label>
-
-                  <input
-                    type="date"
-                    name="startDate"
-                    value={form.startDate}
-                    onChange={handleChange}
-                    className={inputClass}
-                  />
-                </div>
-
-                {/* End date */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-0.5">
-                    Archive Timestamp
-                  </label>
-
-                  <input
-                    type="date"
-                    name="endDate"
-                    value={form.endDate}
-                    onChange={handleChange}
-                    disabled={form.isCurrent}
-                    className={`${inputClass} disabled:opacity-40 disabled:cursor-not-allowed`}
-                  />
-                </div>
-
-                {/* Order */}
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-0.5">
-                    Sequence Index
-                  </label>
-
-                  <input
-                    type="number"
-                    name="orderIndex"
-                    value={form.orderIndex}
-                    onChange={handleChange}
-                    className={inputClass}
-                  />
-                </div>
-
-                {/* Current role toggle */}
-                <div className="flex items-center justify-between gap-4 h-10 border border-dashed border-border rounded-lg px-3 mt-auto select-none">
-                  <label
-                    htmlFor="isCurrent"
-                    className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground cursor-pointer"
-                  >
-                    Active Timeline Node
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setForm(prev => ({
-                        ...prev,
-                        isCurrent: !prev.isCurrent,
-                      }))
-                    }
-                    className={`relative w-9 h-5 rounded-full transition-colors duration-150 shrink-0 cursor-pointer border border-transparent
-                    ${form.isCurrent ? "bg-primary" : "bg-muted border-border"}`}
-                  >
-                    <span
-                      className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-transform duration-150
-                      ${
-                        form.isCurrent
-                          ? "translate-x-4 bg-primary-foreground"
-                          : "translate-x-0"
-                      }`}
+              {/* Section: Position */}
+              <div className="mb-6 pb-6" style={{ borderBottom: "1px solid var(--rule)" }}>
+                <p
+                  className="text-[11px] font-semibold uppercase tracking-wider mb-3"
+                  style={{ color: "var(--muted-foreground)" }}
+                >
+                  Position
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-[12px] font-medium mb-1.5">Company</label>
+                    <input
+                      value={form.company}
+                      onChange={e => update({ company: e.target.value })}
+                      placeholder="e.g. Tech Startup PH"
+                      className={inputClass}
+                      style={inputStyle}
                     />
-                  </button>
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-medium mb-1.5">Role</label>
+                    <input
+                      value={form.role}
+                      onChange={e => update({ role: e.target.value })}
+                      placeholder="e.g. Frontend Developer"
+                      className={inputClass}
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium mb-1.5">Description</label>
+                  <textarea
+                    value={form.description}
+                    onChange={e => update({ description: e.target.value })}
+                    placeholder="What did you build, own, or lead in this role?"
+                    rows={3}
+                    className={`${inputClass} h-auto py-2.5 resize-none leading-relaxed`}
+                    style={inputStyle}
+                  />
                 </div>
               </div>
 
-              {/* Description */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-0.5">
-                  Operational Responsibility Manifest
-                </label>
-
-                <textarea
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                  placeholder="Describe responsibilities, technologies, and operational scope..."
-                  rows={4}
-                  className={`${inputClass} h-auto py-2.5 resize-none leading-relaxed font-sans text-xs`}
+              {/* Section: Timeline */}
+              <div className="mb-6 pb-6" style={{ borderBottom: "1px solid var(--rule)" }}>
+                <p
+                  className="text-[11px] font-semibold uppercase tracking-wider mb-3"
+                  style={{ color: "var(--muted-foreground)" }}
+                >
+                  Timeline
+                </p>
+                <DateRangeField
+                  startDate={form.startDate}
+                  endDate={form.endDate}
+                  isCurrent={form.isCurrent}
+                  onChange={update}
                 />
               </div>
 
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-1 border-t border-border/50 mt-2">
+              {/* Section: Ordering — explicit about how ties are broken */}
+              <div className="mb-2">
+                <p
+                  className="text-[11px] font-semibold uppercase tracking-wider mb-3"
+                  style={{ color: "var(--muted-foreground)" }}
+                >
+                  Ordering
+                </p>
+                <div>
+                  <label className="block text-[12px] font-medium mb-1.5">Sort position</label>
+                  <input
+                    type="number"
+                    value={form.orderIndex}
+                    onChange={e => update({ orderIndex: e.target.value })}
+                    className={`${inputClass} w-32`}
+                    style={inputStyle}
+                  />
+                  <p
+                    className="text-[11.5px] mt-1.5"
+                    style={{ color: "var(--muted-foreground)" }}
+                  >
+                    Roles are ordered by date automatically. This only breaks a tie if two
+                    roles share the same start date.
+                  </p>
+                </div>
+              </div>
+
+              {!editingId && (
+                <p
+                  className="text-[11.5px] mt-4 mb-2"
+                  style={{ color: "var(--muted-foreground)" }}
+                >
+                  New roles are added as drafts — publish from the list once you're happy with
+                  it.
+                </p>
+              )}
+
+              <div className="flex justify-end gap-2 mt-4">
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="flex items-center gap-1.5 px-4 h-10 border border-border text-muted-foreground hover:text-foreground hover:bg-muted/30 text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+                  className="px-3.5 h-9 rounded-lg text-[12.5px] font-medium"
+                  style={{ color: "var(--muted-foreground)" }}
                 >
-                  <X size={12} />
-                  Abort
+                  Cancel
                 </button>
-
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center gap-1.5 px-4 h-10 bg-primary text-primary-foreground disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-mono font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer shadow-sm"
+                  className="px-4 h-9 rounded-lg text-[12.5px] font-semibold disabled:opacity-50"
+                  style={{ background: "var(--signal)", color: "var(--background)" }}
                 >
-                  <Check size={12} />
-
-                  {isSubmitting ? "Syncing..." : editingId ? "Commit Changes" : "Write Record"}
+                  {isSubmitting ? "Saving..." : editingId ? "Save changes" : "Add role"}
                 </button>
               </div>
-            </form>
-          </motion.div>
+            </div>
+          </motion.form>
         )}
       </AnimatePresence>
 
-      {/* Experience list */}
-      {experiences.length === 0 ? (
-        <div className="text-center py-16 border border-dashed border-border rounded-xl bg-card select-none">
-          <p className="text-[11px] font-mono text-muted-foreground/50 italic">
-            Zero workforce timeline nodes detected inside registry.
-          </p>
-        </div>
+      <div className="mb-5">
+        <StatusTabs value={statusFilter} onChange={setStatusFilter} />
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon={Briefcase}
+          title={
+            experiences.length === 0
+              ? "No experience logged yet"
+              : "Nothing matches this filter"
+          }
+          description={
+            experiences.length === 0
+              ? "Add your first role to start building your timeline."
+              : "Try a different status filter."
+          }
+        />
       ) : (
-        <div className="flex flex-col gap-3">
-          {experiences.map((exp, index) => (
-            <motion.div
-              key={exp.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-              className="bg-card border border-border rounded-xl p-4 subpixel-antialiased shadow-sm hover:border-foreground/10 transition-colors group"
-            >
-              <div className="flex items-start justify-between gap-4">
-                {/* Left */}
-                <div className="flex gap-3 min-w-0 flex-1">
-                  {/* Avatar */}
-                  <div className="w-10 h-10 rounded-lg bg-muted border border-border flex items-center justify-center shrink-0">
-                    <Building2 size={16} className="text-muted-foreground" />
+        <div className="flex flex-col gap-8">
+          {/* Current role — the active chapter, not a badge on a row */}
+          {current && (
+            <div>
+              <p
+                className="text-[11px] font-semibold uppercase tracking-wider mb-3"
+                style={{ color: "var(--muted-foreground)" }}
+              >
+                Current
+              </p>
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-start justify-between gap-4 p-5 rounded-lg"
+                style={{
+                  border: "1px solid var(--signal)",
+                  background: "color-mix(in oklch, var(--signal) 5%, var(--card))",
+                }}
+              >
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-[16px] font-bold mb-1">{current.role}</h3>
+                  <p
+                    className="text-[13px] font-medium mb-2"
+                    style={{ color: "var(--signal)" }}
+                  >
+                    {current.company}
+                  </p>
+                  <p
+                    className="text-[12.5px] leading-relaxed mb-3 max-w-[560px]"
+                    style={{ color: "var(--muted-foreground)" }}
+                  >
+                    {current.description}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="text-[11.5px] font-mono"
+                      style={{ color: "var(--muted-foreground)" }}
+                    >
+                      Since {formatMonth(current.startDate)}
+                    </span>
+                    <PublishBadge
+                      status={current.status}
+                      scheduledAt={current.scheduledAt}
+                      publishedAt={current.publishedAt}
+                    />
                   </div>
+                </div>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <PublishMenu
+                    status={current.status}
+                    onAction={(action, payload) => handleTransition(current, action, payload)}
+                  />
+                  <button
+                    onClick={() => handleEdit(current)}
+                    className="p-1.5 rounded-md hover:bg-[var(--background)]"
+                    style={{ color: "var(--muted-foreground)" }}
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(current.id)}
+                    className="p-1.5 rounded-md hover:bg-[var(--background)]"
+                    style={{ color: "var(--muted-foreground)" }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
 
-                  {/* Content */}
-                  <div className="min-w-0 flex-1">
-                    {/* Role */}
-                    <div className="flex items-center gap-2 mb-1 select-none">
-                      <h3 className="text-xs font-bold text-foreground tracking-wide truncate">
-                        {exp.role}
-                      </h3>
-
-                      {exp.isCurrent && (
-                        <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
-                          Active
+          {/* Past roles — a quiet, compact log; recedes on purpose */}
+          {past.length > 0 && (
+            <div>
+              <p
+                className="text-[11px] font-semibold uppercase tracking-wider mb-3"
+                style={{ color: "var(--muted-foreground)" }}
+              >
+                Previously
+              </p>
+              <div
+                className="rounded-lg overflow-hidden"
+                style={{ border: "1px solid var(--rule)" }}
+              >
+                {past.map((exp, i) => (
+                  <div
+                    key={exp.id}
+                    className="flex items-center justify-between gap-4 px-4 py-3.5 transition-colors hover:bg-[var(--muted)]"
+                    style={{
+                      background: "var(--card)",
+                      borderTop: i > 0 ? "1px solid var(--rule)" : "none",
+                    }}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-2">
+                        <h3 className="text-[13.5px] font-semibold truncate">{exp.role}</h3>
+                        <span
+                          className="text-[12px]"
+                          style={{ color: "var(--muted-foreground)" }}
+                        >
+                          — {exp.company}
                         </span>
-                      )}
-                    </div>
-
-                    {/* Company */}
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <BriefcaseBusiness size={11} className="text-muted-foreground/50" />
-
-                      <p className="text-[11px] font-mono text-muted-foreground">
-                        {exp.company}
+                      </div>
+                      <p
+                        className="text-[11.5px] font-mono mt-0.5"
+                        style={{ color: "var(--muted-foreground)" }}
+                      >
+                        {formatMonth(exp.startDate)} – {formatMonth(exp.endDate)}
                       </p>
                     </div>
-
-                    {/* Description */}
-                    {exp.description && (
-                      <p className="text-[11px] text-muted-foreground font-sans leading-relaxed line-clamp-2 mb-3">
-                        {exp.description}
-                      </p>
-                    )}
-
-                    {/* Metadata */}
-                    <div className="flex items-center gap-2 flex-wrap text-[10px] font-mono text-muted-foreground/60 select-none">
-                      <span className="flex items-center gap-1">
-                        <Calendar size={11} />
-                        {formatDate(exp.startDate)} →{" "}
-                        {exp.isCurrent ? "PRESENT" : formatDate(exp.endDate)}
-                      </span>
-
-                      <span className="text-muted-foreground/30">•</span>
-
-                      <span>NODE_INDEX {exp.orderIndex}</span>
+                    <PublishBadge
+                      status={exp.status}
+                      scheduledAt={exp.scheduledAt}
+                      publishedAt={exp.publishedAt}
+                    />
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <PublishMenu
+                        status={exp.status}
+                        onAction={(action, payload) => handleTransition(exp, action, payload)}
+                      />
+                      <button
+                        onClick={() => handleEdit(exp)}
+                        className="p-1.5 rounded-md hover:bg-[var(--background)]"
+                        style={{ color: "var(--muted-foreground)" }}
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(exp.id)}
+                        className="p-1.5 rounded-md hover:bg-[var(--background)]"
+                        style={{ color: "var(--muted-foreground)" }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
                     </div>
                   </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-1 shrink-0 select-none">
-                  <button
-                    onClick={() => handleEdit(exp)}
-                    className="p-1.5 text-muted-foreground/50 hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
-                  >
-                    <Pencil size={13} />
-                  </button>
-
-                  <button
-                    onClick={() => handleDelete(exp.id)}
-                    className="p-1.5 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
+                ))}
               </div>
-            </motion.div>
-          ))}
+            </div>
+          )}
         </div>
       )}
     </div>

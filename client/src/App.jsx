@@ -31,6 +31,7 @@ import SEO from "./components/SEO";
 import { useHero } from "./hooks/useHero";
 import ScrollToTop from "./components/ScrollToTop";
 import LoadingScreen from "./components/effects/LoadingScreen";
+import BlogEditor from "./pages/admin/BlogEditor";
 
 function PublicHome() {
   return (
@@ -68,6 +69,8 @@ function AdminRoutes() {
           <Route path="projects/new" element={<ProjectEditor />} />
           <Route path="projects/:id/edit" element={<ProjectEditor />} />
           <Route path="blog" element={<ManageBlog />} />
+          <Route path="blog/new" element={<BlogEditor />} />
+          <Route path="blog/:id/edit" element={<BlogEditor />} />
           <Route path="inbox" element={<Inbox />} />
         </Routes>
       </AdminLayout>
