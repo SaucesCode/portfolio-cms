@@ -40,7 +40,8 @@ function ProjectRow({ project, index, isHovered, isOpen, onHover, onToggle, onOp
     <div className="border-b" style={{ borderColor: "var(--rule)" }}>
       <motion.button
         onMouseEnter={() => onHover(project.id)}
-        onClick={() => onToggle(project.id)}
+        // onClick={() => onToggle(project.id)}
+        onClick={() => onOpenDetail(project)}
         className="group w-full flex items-start gap-5 py-6 text-left"
       >
         {/* Index number — real sequence: order shown in the list */}
