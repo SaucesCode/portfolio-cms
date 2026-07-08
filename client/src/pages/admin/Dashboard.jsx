@@ -23,6 +23,7 @@ const CONTENT_LINKS = [
   { label: "Experience", href: "/admin/experience", key: "experience" },
   { label: "Certifications", href: "/admin/certifications", key: "certifications" },
   { label: "Testimonials", href: "/admin/testimonials", key: "testimonials" },
+  { label: "Stats", href: "/admin/stats", key: "stats" },
 ];
 
 export default function Dashboard() {
@@ -61,6 +62,10 @@ export default function Dashboard() {
     queryKey: ["admin-blog"],
     queryFn: () => api.get("/admin/blog").then(r => r.data),
   });
+  const { data: stats = [] } = useQuery({
+    queryKey: ["admin-stats"],
+    queryFn: () => api.get("/admin/stats").then(r => r.data),
+  });
   const { data: syncStatus, refetch: refetchSyncStatus } = useQuery({
     queryKey: ["sync-status"],
     queryFn: () => api.get("/admin/github/sync-status").then(r => r.data),
@@ -73,6 +78,7 @@ export default function Dashboard() {
     experience: experiences.length,
     certifications: certifications.length,
     testimonials: testimonials.length,
+    stats: stats.length,
   };
   const unread = messages.filter(m => !m.isRead);
   const publishedCount = blogPosts.filter(p => p.published).length;

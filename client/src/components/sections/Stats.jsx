@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, Fragment } from "react";
+import { useState, useEffect, Fragment, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useStats } from "../../hooks/useStats";
 
@@ -37,7 +37,10 @@ function StatNumber({ stat, index, animate }) {
         {count}
         {stat.value >= 10 && "+"}
       </span>
-      <span className="ml-2 font-medium" style={{ fontSize: "clamp(15px, 1.6vw, 19px)", color: "var(--muted-foreground)" }}>
+      <span
+        className="ml-2 font-medium"
+        style={{ fontSize: "clamp(15px, 1.6vw, 19px)", color: "var(--muted-foreground)" }}
+      >
         {stat.label.toLowerCase()}
       </span>
     </span>
@@ -47,11 +50,13 @@ function StatNumber({ stat, index, animate }) {
 export default function Stats() {
   const { data: stats = [], isLoading } = useStats();
   const [inView, setInView] = useState(false);
-  const ref = useRef(null);
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+  // A callback ref, not useRef — this fires whenever the DOM node actually
+  // appears, even if that's on a later render than the component's first
+  // mount (which is exactly what happens here: the section returns null
+  // while `isLoading` is true, then mounts for real once data arrives).
+  const sectionRef = useCallback(node => {
+    if (!node) return;
     const obs = new IntersectionObserver(
       entries => {
         if (entries[0].isIntersecting) {
@@ -61,14 +66,18 @@ export default function Stats() {
       },
       { threshold: 0.4 },
     );
-    obs.observe(el);
-    return () => obs.disconnect();
+    obs.observe(node);
   }, []);
 
   if (isLoading || stats.length === 0) return null;
 
   return (
-    <section id="stats" ref={ref} className="border-t" style={{ background: "var(--background)", borderColor: "var(--rule)" }}>
+    <section
+      id="stats"
+      ref={sectionRef}
+      className="border-t"
+      style={{ background: "var(--background)", borderColor: "var(--rule)" }}
+    >
       <div className="mx-auto max-w-[900px] px-6 py-28 md:py-40">
         <motion.p
           initial={{ opacity: 0, y: 10 }}

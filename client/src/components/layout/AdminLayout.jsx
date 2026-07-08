@@ -9,6 +9,7 @@ import {
   Award,
   MessageSquare,
   MessagesSquare,
+  BarChart3,
   Settings,
   LogOut,
   Menu,
@@ -33,6 +34,7 @@ const NAV_GROUPS = [
       { label: "Experience", href: "/admin/experience", icon: Briefcase },
       { label: "Certifications", href: "/admin/certifications", icon: Award },
       { label: "Testimonials", href: "/admin/testimonials", icon: MessagesSquare },
+      { label: "Stats", href: "/admin/stats", icon: BarChart3 },
     ],
   },
   {
