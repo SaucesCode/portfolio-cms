@@ -190,11 +190,11 @@ export default function Hero() {
                 className="relative overflow-hidden border"
                 style={{ aspectRatio: "4/5", borderColor: "var(--rule)" }}
               >
-                <img
-                  src={hero?.profileImageUrl || "https://via.placeholder.com/480x600"}
-                  alt={hero?.name || "Portrait"}
-                  className="h-full w-full object-cover object-top grayscale-[35%] contrast-[1.05] transition-all duration-500 hover:grayscale-0"
-                />
+               <img
+  src={hero?.profileImageUrl || "https://via.placeholder.com/480x600"}
+  alt={hero?.name || "Portrait"}
+  className="h-full w-full object-cover object-top"
+/>
               </div>
             </div>
 
