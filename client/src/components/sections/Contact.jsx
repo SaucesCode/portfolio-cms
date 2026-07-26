@@ -8,8 +8,8 @@ import api from "../../services/api";
 const DIRECT_LINKS = [
   {
     label: "Email",
-    display: "jamessdemesa@email.com",
-    href: "mailto:jamessdemesa@email.com",
+    display: "jamesspatrickdm@gmail.com",
+    href: "mailto:jamesspatrickdm@gmail.com",
   },
   {
     icon: FaGithub,
