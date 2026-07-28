@@ -239,9 +239,6 @@ export default function ManageHero() {
   } = useDirtyForm(emptyHero);
   const update = patch => setForm(prev => ({ ...prev, ...patch }));
 
-  const [saveState, setSaveState] = useState("idle"); // idle | saving | saved
-  function useSaveState() {} // placeholder removed below — see note
-
   const { data: hero, isLoading } = useQuery({
     queryKey: ["hero"],
     queryFn: () => api.get("/hero").then(res => res.data),
