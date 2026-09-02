@@ -191,10 +191,12 @@ export default function Hero() {
                 style={{ aspectRatio: "4/5", borderColor: "var(--rule)" }}
               >
                <img
-  src={hero?.profileImageUrl || "https://via.placeholder.com/480x600"}
-  alt={hero?.name || "Portrait"}
-  className="h-full w-full object-cover object-top"
-/>
+                 src={hero?.profileImageUrl || "https://via.placeholder.com/480x600"}
+                 alt={hero?.name ? `${hero.name} — Full-Stack Developer` : "James Patrick De Mesa — Full-Stack Developer"}
+                 className="h-full w-full object-cover object-top"
+                 loading="eager"
+                 fetchPriority="high"
+               />
               </div>
             </div>
 

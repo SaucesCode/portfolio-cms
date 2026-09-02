@@ -1,0 +1,7 @@
+# robots.txt for https://jamespatrickdemesa.vercel.app/
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/*
+
+Sitemap: https://jamespatrickdemesa.vercel.app/sitemap.xml

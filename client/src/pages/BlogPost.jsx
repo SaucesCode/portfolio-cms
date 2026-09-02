@@ -219,10 +219,36 @@ export default function BlogPost() {
   return (
     <>
       <SEO
-        title={`${post.title} — Writing`}
+        title={`${post.title} — James Patrick De Mesa`}
         description={post.excerpt || post.content.slice(0, 160)}
         url={`/blog/${post.slug}`}
         image={post.coverImageUrl || "/og-image.png"}
+        type="article"
+        publishedTime={post.publishedAt || post.createdAt}
+        modifiedTime={post.updatedAt || post.publishedAt}
+        tags={post.tags || []}
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          "headline": post.title,
+          "description": post.excerpt || post.content.slice(0, 160),
+          "image": post.coverImageUrl || "https://jamespatrickdemesa.vercel.app/og-image.png",
+          "datePublished": post.publishedAt || post.createdAt,
+          "dateModified": post.updatedAt || post.publishedAt,
+          "author": {
+            "@type": "Person",
+            "name": "James Patrick De Mesa",
+            "url": "https://jamespatrickdemesa.vercel.app"
+          },
+          "publisher": {
+            "@type": "Person",
+            "name": "James Patrick De Mesa"
+          },
+          "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": `https://jamespatrickdemesa.vercel.app/blog/${post.slug}`
+          }
+        }}
       />
       <ProgressBar />
 

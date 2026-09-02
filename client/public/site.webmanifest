@@ -1,0 +1,21 @@
+{
+  "name": "James Patrick De Mesa — Portfolio",
+  "short_name": "James De Mesa",
+  "description": "Full-Stack Developer portfolio of James Patrick De Mesa (SaucesCode).",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0e12",
+  "theme_color": "#0d0e12",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
