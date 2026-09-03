@@ -13,7 +13,13 @@ const SPECS = [
 
 export default function Hero() {
   const { data: hero, isLoading } = useHero();
-  if (isLoading) return <section id="hero" className="min-h-[80vh]" />;
+  if (isLoading) {
+    return (
+      <section id="hero" className="min-h-[80vh]">
+        <h1 className="sr-only">James Patrick De Mesa — Full-Stack Developer &amp; Software Engineer</h1>
+      </section>
+    );
+  }
 
   const taglines = hero?.tagline?.length
     ? hero.tagline
@@ -46,6 +52,7 @@ export default function Hero() {
               className="font-black leading-[0.94] tracking-[-0.03em]"
               style={{ fontSize: "clamp(42px, 5.6vw, 84px)" }}
             >
+              <span className="sr-only">James Patrick De Mesa — Full-Stack Developer &amp; Software Engineer. </span>
               I build software
               <br />
               that feels{" "}

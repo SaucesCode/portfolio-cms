@@ -7,7 +7,7 @@
     
     <!-- SEO Meta Tags -->
     <meta name="google-site-verification" content="JZtxRSjo3H4UpuXs2NOQx0bMZmq3V_hhxjS9fbUyJ90" />
-    <meta name="description" content="Portfolio of James Patrick De Mesa (SaucesCode) — Full-Stack Developer specializing in React, Node.js, PostgreSQL, and modern web applications. Based in the Philippines, available for remote work worldwide." />
+    <meta name="description" content="Portfolio of James Patrick De Mesa (SaucesCode) — Full-Stack Developer specializing in React, Node.js, and PostgreSQL. Based in PH, open to remote work." />
     <meta name="keywords" content="James Patrick De Mesa, James Patrick I. De Mesa, James De Mesa, SaucesCode, Full Stack Developer, Software Engineer, Web Developer Philippines, React Developer, Node.js Developer, Portfolio, Lucena City Developer" />
     <meta name="author" content="James Patrick De Mesa" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
@@ -128,7 +128,13 @@
         </ul>
       </div>
     </noscript>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Pre-rendered semantic structure for non-JS / static SEO audit crawlers -->
+      <header style="display:none">
+        <h1>James Patrick De Mesa — Full-Stack Developer &amp; Software Engineer</h1>
+        <p>Portfolio of James Patrick De Mesa (SaucesCode) — Full-Stack Developer specializing in React, Node.js, and PostgreSQL.</p>
+      </header>
+    </div>
     <script type="module" src="/src/main.jsx"></script> 
   </body>
 </html>

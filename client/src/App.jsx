@@ -38,7 +38,7 @@ function PublicHome() {
     <Layout>
       <SEO
         title="James Patrick De Mesa — Full-Stack Developer & Software Engineer"
-        description="Portfolio of James Patrick De Mesa (SaucesCode) — Full-Stack Developer specializing in React, Node.js, PostgreSQL, and modern web applications. Based in the Philippines, available for remote work worldwide."
+        description="Portfolio of James Patrick De Mesa (SaucesCode) — Full-Stack Developer specializing in React, Node.js, and PostgreSQL. Based in PH, open to remote work."
         url="/"
         type="profile"
       />
